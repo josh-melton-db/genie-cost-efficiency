@@ -2,11 +2,11 @@
 
 Benchmark Genie space **context strategies** on the same data and questions, then rank them by:
 
-> **$ per correct answer = Genie LLM $ / correct answers**
+> **$ per answer = Genie LLM $ / answers**
 
-When accuracy is held constant, cost differences come from *how* you curate the space — not from warehouse size.
+Cost differences come from *how* you curate the space — not from warehouse size.
 
-**Headline result:** five repeats of ten curation approaches stayed at **~98–100% accuracy**, with Genie LLM **$ / correct** still spanning **~$0.013–$0.050** (~3.8×) on settled cost repeats. See [`FINDINGS.md`](FINDINGS.md).
+**Headline result:** five repeats of ten curation approaches show Genie LLM **$ / answer** spanning **~$0.013–$0.048** (~3.8×). See [`FINDINGS.md`](FINDINGS.md).
 
 ---
 
@@ -25,14 +25,14 @@ generate for each answer.
 
 1. **Model first** — put proprietary definitions (fiscal periods, revenue recognition, membership/churn) into certified **Metric Views** with synonyms, formats, and filtered/composed measures.
 2. **Encapsulate the hot path** — for frequent or hard questions, add a small set of **trusted UC SQL functions** or **focused example SQLs**.
-3. **Stop there** — stacking instructions + expressions + joins + examples + functions “just in case” raises Genie cost without improving accuracy once quality is already high.
+3. **Stop there** — stacking instructions + expressions + joins + examples + functions “just in case” raises Genie cost once the space is already well curated.
 
 | Approach | What it is | Role |
 |----------|------------|------|
-| Trusted UC functions | Genie calls parameterized SQL functions | Lowest Genie $/correct among perfect configs |
+| Trusted UC functions | Genie calls parameterized SQL functions | Lowest Genie $/answer |
 | Focused examples (~10) | Question → SQL exemplars | Best prompt-only thrift |
-| Rich Metric Views only | Certified semantics, no prompt soup | Strong reusable foundation; reaches 100% without prompt soup |
-| Full / overloaded context | Every lever at once | Same accuracy, higher Genie $ |
+| Rich Metric Views only | Certified semantics, no prompt soup | Strong reusable foundation |
+| Full / overloaded context | Every lever at once | Higher Genie $ |
 
 ---
 
@@ -42,7 +42,7 @@ generate for each answer.
 - Lakeflow Spark Declarative Pipelines (bronze → silver → gold)
 - Certified Metric Views (sales, membership, conformed / windowed variants)
 - Genie space tier configs (ablations + high-quality comparison set)
-- Conversation API harness, execution-match scoring, and Genie LLM cost attribution from system tables
+- Conversation API harness and Genie LLM cost attribution from system tables
 - Lakeview dashboard asset for TCO rollups
 
 Agent mode is out of scope (UI-only; incompatible with service-principal-per-tier LLM attribution).
@@ -51,16 +51,16 @@ Agent mode is out of scope (UI-only; incompatible with service-principal-per-tie
 
 ## Leaderboard (summary)
 
-Mean Genie $/correct over **4 settled cost repeats** (± SE). Accuracy from **5** repeats. Full narrative: [`FINDINGS.md`](FINDINGS.md).
+Mean Genie $/answer over **five repeats** (± SE). Full narrative: [`FINDINGS.md`](FINDINGS.md).
 
-| Rank | Strategy | Mean $/correct | SE |
-|-----:|----------|---------------:|---:|
-| 1 | Trusted UC functions | **$0.013** | ±$0.000 |
+| Rank | Strategy | Mean $/answer | SE |
+|-----:|----------|--------------:|---:|
+| 1 | Trusted UC functions | **$0.013** | ±$0.001 |
 | 2 | 10 focused examples | $0.027 | ±$0.001 |
-| 3–4 | Full curation / SQL-source MV | ~$0.033 | ±$0.000 |
-| 5–7 | Hybrid / wide MV / MV+instructions | ~$0.036–0.039 | |
-| 8–9 | Window MVs / Metric Views only | ~$0.042–0.043 | |
-| 10 | MV + expressions + joins | $0.050 | ±$0.004 |
+| 3–4 | SQL-source MV / full curation | ~$0.033 | ±$0.000 |
+| 5–7 | Hybrid / wide MV / MV+instructions | ~$0.035–0.039 | |
+| 8–9 | Window MVs / Metric Views only | ~$0.041 | |
+| 10 | MV + expressions + joins | $0.048 | ±$0.003 |
 
 List prices and region affect absolute dollars; **rankings and relative gaps** are the portable takeaway.
 
@@ -84,7 +84,7 @@ python -m genie_bench.cost.attribute_costs --catalog "$CATALOG" --schema "$SCHEM
 python -m genie_bench.report.build_results_tables --catalog "$CATALOG" --schema "$SCHEMA"
 ```
 
-Primary ranking column: `cost_per_correct_usd` in `metric_tco` (Genie-only; prefer tiers above the quality floor).
+Primary ranking column: Genie LLM $ per answer (see `results/repeat5_leaderboard.json`).
 
 ### Prerequisites
 
@@ -92,7 +92,7 @@ Primary ranking column: `cost_per_correct_usd` in `metric_tco` (Genie-only; pref
 - Rights to create UC objects, serverless SQL warehouses, Genie spaces, and service principals
 - Python 3.10+
 
-Service principals are used so Genie LLM usage is fully list-billable (no free monthly allowance), which makes $/correct comparable across tiers.
+Service principals are used so Genie LLM usage is fully list-billable (no free monthly allowance), which makes $/answer comparable across tiers.
 
 ---
 
@@ -110,6 +110,7 @@ src/genie_bench/
   cost/                 # Genie LLM attribution
   report/               # metric_tco rollups
 scripts/                # wave runners and helpers
+results/                # published wave leaderboards
 resources/              # Databricks Asset Bundle defs
 dashboards/             # Lakeview TCO dashboard
 FINDINGS.md             # results and guidance
@@ -119,6 +120,6 @@ FINDINGS.md             # results and guidance
 
 ## Notes
 
-- Billing system tables can lag; re-run `attribute_costs` if Genie $ shows as zero shortly after a run.
+- Billing system tables can lag; re-run attribution if Genie $ shows as zero shortly after a run.
 - Some Genie settings may still need UI confirmation — see `src/genie_bench/spaces/manual_steps.md`.
 - Absolute dollar amounts depend on region/list price; use relative rankings when comparing strategies.

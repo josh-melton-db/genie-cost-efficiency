@@ -1,11 +1,5 @@
 {
-  "cost_runs": [
-    "run_20260714T134205Z_1bbc5f08",
-    "run_20260714T141755Z_898efcaa",
-    "run_20260714T145236Z_b981227f",
-    "run_20260714T152633Z_ee214060"
-  ],
-  "acc_runs": [
+  "run_ids": [
     "run_20260714T134205Z_1bbc5f08",
     "run_20260714T141755Z_898efcaa",
     "run_20260714T145236Z_b981227f",
@@ -21,316 +15,287 @@
     "end": "2026-07-14T17:00:00Z"
   },
   "attribution": "hour_bucket_prorated_by_ask_count",
-  "note": "Cost mean/SE use runs 1-4 (Genie billing settled for hours 13-15 UTC). Run 5 cost omitted pending hour-16 billing. Accuracy uses all 5 runs.",
+  "metric": "genie_cost_usd / n_questions (cost per answer, total)",
+  "n_runs": 5,
   "leaderboard": [
     {
       "tier": "T17",
       "name": "Trusted UC functions",
+      "philosophy": "Encapsulation",
       "lever": "sql_functions",
-      "axis": "trusted_assets",
-      "tier_name": "uc_sql_functions_only",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.013046699999999925,
-      "std_cpc": 5.785827512119467e-05,
-      "se_cpc": 2.8929137560597337e-05,
-      "min_cpc": 0.0130064999999999,
-      "max_cpc": 0.0131291999999999,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.130467,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0130064999999999,
-        0.0130064999999999,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.012586179999999999,
+      "std_cost_per_answer_usd": 0.0010309723745086478,
+      "se_cost_per_answer_usd": 0.0004610648624651416,
+      "min_cost_per_answer_usd": 0.0107441,
+      "max_cost_per_answer_usd": 0.013129199999999999,
+      "mean_genie_cost_usd": 0.1258618,
+      "per_run_cpa": [
+        0.013006499999999999,
         0.0130446,
-        0.0131291999999999
+        0.013129199999999999,
+        0.013006499999999999,
+        0.0107441
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.130065,
+        0.130446,
+        0.131292,
+        0.130065,
+        0.107441
       ]
     },
     {
       "tier": "T16",
       "name": "10 focused examples",
+      "philosophy": "Encapsulation",
       "lever": "ten_examples",
-      "axis": "example_sql_density",
-      "tier_name": "benchmark_aligned_examples",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.02728074999999997,
-      "std_cpc": 0.002077660054823672,
-      "se_cpc": 0.001038830027411836,
-      "min_cpc": 0.025841375,
-      "max_cpc": 0.0303482,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.2728075,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0267347142857142,
-        0.0261987107142857,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.02724104,
+      "std_cost_per_answer_usd": 0.0018014960166643158,
+      "se_cost_per_answer_usd": 0.0008056535108913008,
+      "min_cost_per_answer_usd": 0.025841375,
+      "max_cost_per_answer_usd": 0.0303482,
+      "mean_genie_cost_usd": 0.27241039999999994,
+      "per_run_cpa": [
+        0.02673471428571429,
         0.0303482,
-        0.025841375
+        0.025841375,
+        0.02619871071428571,
+        0.0270822
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
-      ]
-    },
-    {
-      "tier": "T4",
-      "name": "Full curation",
-      "lever": "all_levers",
-      "axis": "full",
-      "tier_name": "fully_curated",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.03267505,
-      "std_cpc": 0.0004033318360853741,
-      "se_cpc": 0.00020166591804268705,
-      "min_cpc": 0.0322211,
-      "max_cpc": 0.0330149,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.3267505,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0324493,
-        0.0330149,
-        0.0322211,
-        0.0330149
-      ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.2673471428571429,
+        0.303482,
+        0.25841375,
+        0.2619871071428571,
+        0.270822
       ]
     },
     {
       "tier": "T24",
       "name": "SQL-source conformed Metric View",
+      "philosophy": "Logic in source",
       "lever": "conformed_sql_source",
-      "axis": "mv_centric",
-      "tier_name": "conformed_mv_sql_source",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.032894475,
-      "std_cpc": 0.00037623030291742174,
-      "se_cpc": 0.00018811515145871087,
-      "min_cpc": 0.03256865,
-      "max_cpc": 0.0332203,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.32894475,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.03256865,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.032709260000000004,
+      "std_cost_per_answer_usd": 0.0005269581688806054,
+      "se_cost_per_answer_usd": 0.00023566285738316957,
+      "min_cost_per_answer_usd": 0.0319684,
+      "max_cost_per_answer_usd": 0.0332203,
+      "mean_genie_cost_usd": 0.3270926,
+      "per_run_cpa": [
         0.03256865,
         0.0332203,
-        0.0332203
+        0.0332203,
+        0.03256865,
+        0.0319684
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.3256865,
+        0.332203,
+        0.332203,
+        0.3256865,
+        0.319684
+      ]
+    },
+    {
+      "tier": "T4",
+      "name": "Full curation",
+      "philosophy": "Kitchen sink",
+      "lever": "all_levers",
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.03304648,
+      "std_cost_per_answer_usd": 0.0009010042463828892,
+      "se_cost_per_answer_usd": 0.0004029413485856218,
+      "min_cost_per_answer_usd": 0.0322211,
+      "max_cost_per_answer_usd": 0.0345322,
+      "mean_genie_cost_usd": 0.3304648,
+      "per_run_cpa": [
+        0.0324493,
+        0.0322211,
+        0.0330149,
+        0.0330149,
+        0.0345322
+      ],
+      "per_run_cost": [
+        0.324493,
+        0.322211,
+        0.330149,
+        0.330149,
+        0.345322
       ]
     },
     {
       "tier": "T21",
       "name": "MV + examples + trusted + entity",
+      "philosophy": "Hybrid",
       "lever": "rich_mv_examples_trusted_entity",
-      "axis": "semantic_combo",
-      "tier_name": "rich_mv_examples_trusted_entity",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.036030325,
-      "std_cpc": 0.005187096371455889,
-      "se_cpc": 0.0025935481857279445,
-      "min_cpc": 0.03161625,
-      "max_cpc": 0.0416237375,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.36030324999999996,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.03161625,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.03467842,
+      "std_cost_per_answer_usd": 0.005414583291464183,
+      "se_cost_per_answer_usd": 0.0024214752619096938,
+      "min_cost_per_answer_usd": 0.029270800000000003,
+      "max_cost_per_answer_usd": 0.0416237375,
+      "mean_genie_cost_usd": 0.3467842,
+      "per_run_cpa": [
         0.03161625,
         0.0416237375,
-        0.0392650625
+        0.039265062499999996,
+        0.03161625,
+        0.029270800000000003
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.3161625,
+        0.416237375,
+        0.392650625,
+        0.3161625,
+        0.292708
       ]
     },
     {
       "tier": "T25",
       "name": "Wide pre-bucketed Metric View",
+      "philosophy": "Wide measures",
       "lever": "conformed_wide_prebucketed",
-      "axis": "mv_centric",
-      "tier_name": "conformed_mv_wide_prebucketed",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.038450149999999995,
-      "std_cpc": 0.000619496838840467,
-      "se_cpc": 0.0003097484194202335,
-      "min_cpc": 0.03791365,
-      "max_cpc": 0.03898665,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.3845015,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.03898665,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.03858216,
+      "std_cost_per_answer_usd": 0.00061234422549739,
+      "se_cost_per_answer_usd": 0.0002738486627683248,
+      "min_cost_per_answer_usd": 0.03791365,
+      "max_cost_per_answer_usd": 0.0391102,
+      "mean_genie_cost_usd": 0.38582160000000004,
+      "per_run_cpa": [
         0.03898665,
         0.03791365,
-        0.03791365
+        0.03791365,
+        0.03898665,
+        0.0391102
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.3898665,
+        0.3791365,
+        0.3791365,
+        0.3898665,
+        0.391102
       ]
     },
     {
       "tier": "T19",
       "name": "Metric Views + NL instructions",
+      "philosophy": "Elaboration",
       "lever": "rich_mv_plus_text",
-      "axis": "semantic_combo",
-      "tier_name": "rich_mv_plus_instructions",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.03862644999999995,
-      "std_cpc": 0.00011690307951464858,
-      "se_cpc": 5.845153975732429e-05,
-      "min_cpc": 0.0385618999999999,
-      "max_cpc": 0.0388013,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.3862645,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0385618999999999,
-        0.0385618999999999,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.038669819999999994,
+      "std_cost_per_answer_usd": 0.00014019462186546196,
+      "se_cost_per_answer_usd": 6.269694091421026e-05,
+      "min_cost_per_answer_usd": 0.038561899999999996,
+      "max_cost_per_answer_usd": 0.0388433,
+      "mean_genie_cost_usd": 0.3866982,
+      "per_run_cpa": [
+        0.038561899999999996,
         0.0388013,
-        0.0385807
+        0.0385807,
+        0.038561899999999996,
+        0.0388433
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.385619,
+        0.388013,
+        0.385807,
+        0.385619,
+        0.388433
       ]
     },
     {
       "tier": "T26",
       "name": "Window-measure Metric Views",
+      "philosophy": "Semantic layer",
       "lever": "window_measures",
-      "axis": "mv_centric",
-      "tier_name": "semantic_layer_window_measures",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.04215022083333332,
-      "std_cpc": 0.003105289738595239,
-      "se_cpc": 0.0015526448692976195,
-      "min_cpc": 0.0400249,
-      "max_cpc": 0.0466058333333333,
-      "mean_acc": 0.9800000000000001,
-      "std_acc": 0.04472135954999579,
-      "mean_genie": 0.40985075,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.04064148,
+      "std_cost_per_answer_usd": 0.0012297250305454482,
+      "se_cost_per_answer_usd": 0.0005499497523865255,
+      "min_cost_per_answer_usd": 0.0392671,
+      "max_cost_per_answer_usd": 0.04194525,
+      "mean_genie_cost_usd": 0.4064148,
+      "per_run_cpa": [
         0.0400249,
+        0.04194525,
+        0.04194525,
         0.0400249,
-        0.0466058333333333,
-        0.04194525
+        0.0392671
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        0.9,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.400249,
+        0.4194525,
+        0.4194525,
+        0.400249,
+        0.392671
       ]
     },
     {
       "tier": "T3",
       "name": "Metric Views only",
+      "philosophy": "Semantic layer",
       "lever": "rich_metric_view",
-      "axis": "data_surface",
-      "tier_name": "metric_view_rich",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.0424894661616161,
-      "std_cpc": 0.0009247128641342329,
-      "se_cpc": 0.00046235643206711644,
-      "min_cpc": 0.0414264646464646,
-      "max_cpc": 0.0436839,
-      "mean_acc": 0.9800000000000001,
-      "std_acc": 0.04472135954999578,
-      "mean_genie": 0.4145380454545455,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0414264646464646,
-        0.0424237499999999,
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.04094652,
+      "std_cost_per_answer_usd": 0.00271064810423747,
+      "se_cost_per_answer_usd": 0.0012122386848311838,
+      "min_cost_per_answer_usd": 0.03728381818181818,
+      "max_cost_per_answer_usd": 0.0436839,
+      "mean_genie_cost_usd": 0.4094652,
+      "per_run_cpa": [
+        0.03728381818181818,
         0.0436839,
-        0.0424237499999999
+        0.042423749999999996,
+        0.042423749999999996,
+        0.038917381818181815
       ],
-      "per_run_acc": [
-        0.9,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.3728381818181818,
+        0.436839,
+        0.4242375,
+        0.4242375,
+        0.3891738181818182
       ]
     },
     {
       "tier": "T20",
       "name": "MV + expressions + joins",
+      "philosophy": "Elaboration",
       "lever": "rich_mv_expressions_joins",
-      "axis": "semantic_combo",
-      "tier_name": "rich_mv_expressions_joins",
-      "n_cost_runs": 4,
-      "n_acc_runs": 5,
-      "mean_cpc": 0.04973057499999995,
-      "std_cpc": 0.007564321427784537,
-      "se_cpc": 0.0037821607138922683,
-      "min_cpc": 0.0426962,
-      "max_cpc": 0.0602531913043478,
-      "mean_acc": 1.0,
-      "std_acc": 0.0,
-      "mean_genie": 0.49730575,
-      "zeros_in_settled": 0,
-      "per_run_cpc": [
-        0.0602531913043478,
-        0.0463486086956521,
-        0.0496242999999999,
-        0.0426962
+      "n_runs": 5,
+      "zeros": 0,
+      "mean_cost_per_answer_usd": 0.04825972,
+      "std_cost_per_answer_usd": 0.007330163105433273,
+      "se_cost_per_answer_usd": 0.003278148597981951,
+      "min_cost_per_answer_usd": 0.0423763,
+      "max_cost_per_answer_usd": 0.06025319130434782,
+      "mean_genie_cost_usd": 0.4825972,
+      "per_run_cpa": [
+        0.06025319130434782,
+        0.049624299999999996,
+        0.042696200000000004,
+        0.046348608695652174,
+        0.0423763
       ],
-      "per_run_acc": [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+      "per_run_cost": [
+        0.6025319130434782,
+        0.496243,
+        0.426962,
+        0.4634860869565217,
+        0.423763
       ]
     }
   ]
