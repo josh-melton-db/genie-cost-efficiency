@@ -6,7 +6,7 @@ Benchmark Genie space **context strategies** on the same data and questions, the
 
 When accuracy is held constant, cost differences come from *how* you curate the space — not from warehouse size.
 
-**Headline result:** ten distinct curation approaches reached **100% accuracy** on the same 10-question bank, with **~$0.011–$0.044 Genie LLM cost per correct answer** (~4.1× spread). See [`FINDINGS.md`](FINDINGS.md).
+**Headline result:** five repeats of ten curation approaches stayed at **~98–100% accuracy**, with Genie LLM **$ / correct** still spanning **~$0.013–$0.050** (~3.8×) on settled cost repeats. See [`FINDINGS.md`](FINDINGS.md).
 
 ---
 
@@ -49,20 +49,20 @@ Agent mode is out of scope (UI-only; incompatible with service-principal-per-tie
 
 ---
 
-## Perfect-accuracy leaderboard (summary)
+## Leaderboard (summary)
 
-All rows below are **100% correct** on the same questions. Full narrative and method notes: [`FINDINGS.md`](FINDINGS.md).
+Mean Genie $/correct over **4 settled cost repeats** (± SE). Accuracy from **5** repeats. Full narrative: [`FINDINGS.md`](FINDINGS.md).
 
-| Rank | Strategy | Genie $/correct |
-|-----:|----------|----------:|
-| 1 | Trusted UC functions | **$0.011** |
-| 2 | 10 focused examples | $0.027 |
-| 3 | MV + examples + trusted + entity | $0.032 |
-| 4–5 | SQL-source MV / full curation | ~$0.035 |
-| 6–8 | Window measures / MV instructions / wide MV | ~$0.037–0.040 |
-| 9–10 | Metric Views only / MV + expressions + joins | ~$0.044 |
+| Rank | Strategy | Mean $/correct | SE |
+|-----:|----------|---------------:|---:|
+| 1 | Trusted UC functions | **$0.013** | ±$0.000 |
+| 2 | 10 focused examples | $0.027 | ±$0.001 |
+| 3–4 | Full curation / SQL-source MV | ~$0.033 | ±$0.000 |
+| 5–7 | Hybrid / wide MV / MV+instructions | ~$0.036–0.039 | |
+| 8–9 | Window MVs / Metric Views only | ~$0.042–0.043 | |
+| 10 | MV + expressions + joins | $0.050 | ±$0.004 |
 
-List prices and region affect absolute dollars; **rankings** are the portable takeaway.
+List prices and region affect absolute dollars; **rankings and relative gaps** are the portable takeaway.
 
 ---
 

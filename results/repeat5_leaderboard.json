@@ -1,0 +1,337 @@
+{
+  "cost_runs": [
+    "run_20260714T134205Z_1bbc5f08",
+    "run_20260714T141755Z_898efcaa",
+    "run_20260714T145236Z_b981227f",
+    "run_20260714T152633Z_ee214060"
+  ],
+  "acc_runs": [
+    "run_20260714T134205Z_1bbc5f08",
+    "run_20260714T141755Z_898efcaa",
+    "run_20260714T145236Z_b981227f",
+    "run_20260714T152633Z_ee214060",
+    "run_20260714T155951Z_778af1f3"
+  ],
+  "ask_window": {
+    "start": "2026-07-14T13:37:09.524Z",
+    "end": "2026-07-14T16:31:10.139Z"
+  },
+  "bill_window": {
+    "start": "2026-07-14T13:00:00Z",
+    "end": "2026-07-14T17:00:00Z"
+  },
+  "attribution": "hour_bucket_prorated_by_ask_count",
+  "note": "Cost mean/SE use runs 1-4 (Genie billing settled for hours 13-15 UTC). Run 5 cost omitted pending hour-16 billing. Accuracy uses all 5 runs.",
+  "leaderboard": [
+    {
+      "tier": "T17",
+      "name": "Trusted UC functions",
+      "lever": "sql_functions",
+      "axis": "trusted_assets",
+      "tier_name": "uc_sql_functions_only",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.013046699999999925,
+      "std_cpc": 5.785827512119467e-05,
+      "se_cpc": 2.8929137560597337e-05,
+      "min_cpc": 0.0130064999999999,
+      "max_cpc": 0.0131291999999999,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.130467,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0130064999999999,
+        0.0130064999999999,
+        0.0130446,
+        0.0131291999999999
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T16",
+      "name": "10 focused examples",
+      "lever": "ten_examples",
+      "axis": "example_sql_density",
+      "tier_name": "benchmark_aligned_examples",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.02728074999999997,
+      "std_cpc": 0.002077660054823672,
+      "se_cpc": 0.001038830027411836,
+      "min_cpc": 0.025841375,
+      "max_cpc": 0.0303482,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.2728075,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0267347142857142,
+        0.0261987107142857,
+        0.0303482,
+        0.025841375
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T4",
+      "name": "Full curation",
+      "lever": "all_levers",
+      "axis": "full",
+      "tier_name": "fully_curated",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.03267505,
+      "std_cpc": 0.0004033318360853741,
+      "se_cpc": 0.00020166591804268705,
+      "min_cpc": 0.0322211,
+      "max_cpc": 0.0330149,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.3267505,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0324493,
+        0.0330149,
+        0.0322211,
+        0.0330149
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T24",
+      "name": "SQL-source conformed Metric View",
+      "lever": "conformed_sql_source",
+      "axis": "mv_centric",
+      "tier_name": "conformed_mv_sql_source",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.032894475,
+      "std_cpc": 0.00037623030291742174,
+      "se_cpc": 0.00018811515145871087,
+      "min_cpc": 0.03256865,
+      "max_cpc": 0.0332203,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.32894475,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.03256865,
+        0.03256865,
+        0.0332203,
+        0.0332203
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T21",
+      "name": "MV + examples + trusted + entity",
+      "lever": "rich_mv_examples_trusted_entity",
+      "axis": "semantic_combo",
+      "tier_name": "rich_mv_examples_trusted_entity",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.036030325,
+      "std_cpc": 0.005187096371455889,
+      "se_cpc": 0.0025935481857279445,
+      "min_cpc": 0.03161625,
+      "max_cpc": 0.0416237375,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.36030324999999996,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.03161625,
+        0.03161625,
+        0.0416237375,
+        0.0392650625
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T25",
+      "name": "Wide pre-bucketed Metric View",
+      "lever": "conformed_wide_prebucketed",
+      "axis": "mv_centric",
+      "tier_name": "conformed_mv_wide_prebucketed",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.038450149999999995,
+      "std_cpc": 0.000619496838840467,
+      "se_cpc": 0.0003097484194202335,
+      "min_cpc": 0.03791365,
+      "max_cpc": 0.03898665,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.3845015,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.03898665,
+        0.03898665,
+        0.03791365,
+        0.03791365
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T19",
+      "name": "Metric Views + NL instructions",
+      "lever": "rich_mv_plus_text",
+      "axis": "semantic_combo",
+      "tier_name": "rich_mv_plus_instructions",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.03862644999999995,
+      "std_cpc": 0.00011690307951464858,
+      "se_cpc": 5.845153975732429e-05,
+      "min_cpc": 0.0385618999999999,
+      "max_cpc": 0.0388013,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.3862645,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0385618999999999,
+        0.0385618999999999,
+        0.0388013,
+        0.0385807
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T26",
+      "name": "Window-measure Metric Views",
+      "lever": "window_measures",
+      "axis": "mv_centric",
+      "tier_name": "semantic_layer_window_measures",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.04215022083333332,
+      "std_cpc": 0.003105289738595239,
+      "se_cpc": 0.0015526448692976195,
+      "min_cpc": 0.0400249,
+      "max_cpc": 0.0466058333333333,
+      "mean_acc": 0.9800000000000001,
+      "std_acc": 0.04472135954999579,
+      "mean_genie": 0.40985075,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0400249,
+        0.0400249,
+        0.0466058333333333,
+        0.04194525
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        0.9,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T3",
+      "name": "Metric Views only",
+      "lever": "rich_metric_view",
+      "axis": "data_surface",
+      "tier_name": "metric_view_rich",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.0424894661616161,
+      "std_cpc": 0.0009247128641342329,
+      "se_cpc": 0.00046235643206711644,
+      "min_cpc": 0.0414264646464646,
+      "max_cpc": 0.0436839,
+      "mean_acc": 0.9800000000000001,
+      "std_acc": 0.04472135954999578,
+      "mean_genie": 0.4145380454545455,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0414264646464646,
+        0.0424237499999999,
+        0.0436839,
+        0.0424237499999999
+      ],
+      "per_run_acc": [
+        0.9,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "tier": "T20",
+      "name": "MV + expressions + joins",
+      "lever": "rich_mv_expressions_joins",
+      "axis": "semantic_combo",
+      "tier_name": "rich_mv_expressions_joins",
+      "n_cost_runs": 4,
+      "n_acc_runs": 5,
+      "mean_cpc": 0.04973057499999995,
+      "std_cpc": 0.007564321427784537,
+      "se_cpc": 0.0037821607138922683,
+      "min_cpc": 0.0426962,
+      "max_cpc": 0.0602531913043478,
+      "mean_acc": 1.0,
+      "std_acc": 0.0,
+      "mean_genie": 0.49730575,
+      "zeros_in_settled": 0,
+      "per_run_cpc": [
+        0.0602531913043478,
+        0.0463486086956521,
+        0.0496242999999999,
+        0.0426962
+      ],
+      "per_run_acc": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ]
+}
