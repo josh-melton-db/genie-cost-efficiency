@@ -1,0 +1,195 @@
+version: 1.1
+source: ${catalog}.${schema}.fact_order_line
+comment: >
+  PulseForge rich governed sales metrics for Genie TCO benchmark.
+  Business question: commerce performance on a 4-4-5 fiscal calendar.
+  Grain: fulfilled order line. Official revenue = Recognized Revenue.
+  Relative-period flags (Is Last Fiscal Month / Quarter / Current FYTD) encode
+  fiscal windows so Genie filters flags instead of inventing calendar math.
+  Owner: genie-tco-benchmark. MUST be tagged certified.
+
+joins:
+  - name: dim_date
+    source: ${catalog}.${schema}.dim_date
+    on: source.recognition_date_key = dim_date.date_key
+    rely:
+      at_most_one_match: true
+  - name: dim_geo
+    source: ${catalog}.${schema}.dim_geo
+    on: source.geo_key = dim_geo.geo_key
+    rely:
+      at_most_one_match: true
+  - name: dim_product
+    source: ${catalog}.${schema}.dim_product
+    on: source.product_key = dim_product.product_key
+    rely:
+      at_most_one_match: true
+  - name: dim_member
+    source: ${catalog}.${schema}.dim_member
+    on: source.member_key = dim_member.member_key
+    rely:
+      at_most_one_match: true
+  - name: dim_campaign
+    source: ${catalog}.${schema}.dim_campaign
+    on: source.campaign_key = dim_campaign.campaign_key
+    rely:
+      at_most_one_match: true
+  - name: anchor
+    source: ${catalog}.${schema}.v_fiscal_anchor
+    on: "1 = 1"
+    rely:
+      at_most_one_match: true
+
+filter: line_status = 'FULFILLED'
+
+fields:
+  - name: Fiscal Year
+    expr: dim_date.fiscal_year
+    comment: PulseForge 4-4-5 fiscal year — never use calendar YEAR()
+    display_name: Fiscal Year
+    synonyms: [fy, fiscal_yr, fiscal year]
+  - name: Fiscal Month
+    expr: dim_date.fiscal_month
+    comment: Fiscal month number 1-12; NOT calendar month
+    display_name: Fiscal Month
+    synonyms: [fm, month, fiscal_month]
+  - name: Fiscal Quarter
+    expr: dim_date.fiscal_quarter
+    comment: Fiscal quarter 1-4 — never use calendar QUARTER()
+    display_name: Fiscal Quarter
+    synonyms: [fq, quarter, fiscal_quarter]
+  - name: Calendar Date
+    expr: dim_date.calendar_date
+    comment: Gregorian calendar date of recognition
+    display_name: Calendar Date
+  - name: Is Last Fiscal Month
+    expr: (dim_date.fiscal_year = anchor.last_fm_year AND dim_date.fiscal_month = anchor.last_fm_month)
+    comment: True for the previous fiscal month relative to today (4-4-5)
+    display_name: Is Last Fiscal Month
+    synonyms: [last month, previous fiscal month, most recent closed month, last fiscal month]
+  - name: Is Last Fiscal Quarter
+    expr: (dim_date.fiscal_year = anchor.last_fq_year AND dim_date.fiscal_quarter = anchor.last_fq)
+    comment: True for the previous fiscal quarter relative to today
+    display_name: Is Last Fiscal Quarter
+    synonyms: [last quarter, previous fiscal quarter, last fiscal quarter]
+  - name: Is Current Fiscal Year
+    expr: (dim_date.fiscal_year = anchor.current_fy)
+    comment: True for the current fiscal year
+    display_name: Is Current Fiscal Year
+    synonyms: [this fiscal year, current fy, current fiscal year]
+  - name: Is Current FYTD
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_month <= anchor.current_fm)
+    comment: Fiscal year-to-date through the current fiscal month
+    display_name: Is Current FYTD
+    synonyms: [fytd, fiscal year to date, year to date, ytd]
+  - name: Is Current Fiscal Q1
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_quarter = 1)
+    comment: Current fiscal year quarter 1
+    display_name: Is Current Fiscal Q1
+    synonyms: [q1, fiscal q1]
+  - name: Is Current Fiscal Q2
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_quarter = 2)
+    comment: Current fiscal year quarter 2
+    display_name: Is Current Fiscal Q2
+    synonyms: [q2, fiscal q2]
+  - name: Is June Spike Window
+    expr: (dim_date.fiscal_year = 2025 AND dim_date.fiscal_month = 6)
+    comment: Planted PulseForge X1 launch window (fiscal June 2025)
+    display_name: Is June Spike Window
+    synonyms: [june spike, june revenue, device launch window]
+  - name: Region
+    expr: dim_geo.region_name
+    comment: Commercial region name
+    display_name: Region
+    synonyms: [geo, geography, market]
+  - name: Region Code
+    expr: dim_geo.region_code
+    comment: Short region code NA, EMEA, APAC, LATAM
+    display_name: Region Code
+    synonyms: [region_code, geo code]
+  - name: Country Code
+    expr: dim_geo.country_code
+    comment: ISO country code
+    display_name: Country Code
+  - name: Product Family
+    expr: dim_product.product_family
+    comment: Family such as PulseForge X1, ForgeAll Access
+    display_name: Product Family
+    synonyms: [family, device family, product line]
+  - name: Product Class
+    expr: dim_product.product_class
+    comment: DEVICE, ACCESSORY, or SUBSCRIPTION
+    display_name: Product Class
+    synonyms: [class, product type]
+  - name: SKU Code
+    expr: dim_product.sku_code
+    comment: Stock keeping unit code
+    display_name: SKU Code
+    synonyms: [sku, product_code, product code]
+  - name: Campaign Code
+    expr: dim_campaign.campaign_code
+    comment: Marketing campaign identifier
+    display_name: Campaign Code
+    synonyms: [campaign, campaign_id]
+  - name: Campaign Name
+    expr: dim_campaign.campaign_name
+    comment: Human-readable campaign name
+    display_name: Campaign Name
+  - name: Member ID
+    expr: dim_member.member_id
+    comment: External member identifier
+    display_name: Member ID
+    synonyms: [customer_id, user_id, member]
+  - name: Member Handle
+    expr: dim_member.display_handle
+    comment: Member display handle
+    display_name: Member Handle
+  - name: Member Tier
+    expr: dim_member.member_tier
+    comment: Loyalty tier Spark/Volt/Forge/EliteForge
+    display_name: Member Tier
+
+measures:
+  - name: Recognized Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Official revenue — net of returns, recognition-dated, fulfilled only
+    display_name: Recognized Revenue
+    synonyms: [revenue, sales, recognized sales, net revenue, recognized_sales]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Gross Line Amount
+    expr: SUM(gross_amount)
+    comment: Gross before returns — NOT the default revenue definition
+    display_name: Gross Line Amount
+    format:
+      type: currency
+      currency_code: USD
+  - name: Hardware Revenue
+    expr: SUM(net_recognized_amount) FILTER (WHERE dim_product.product_class IN ('DEVICE', 'ACCESSORY'))
+    comment: Recognized revenue for devices and accessories only
+    display_name: Hardware Revenue
+    synonyms: [hardware sales, device revenue, accessory revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Order Line Count
+    expr: COUNT(1)
+    comment: Count of fulfilled order lines
+    display_name: Order Line Count
+  - name: Distinct Members
+    expr: COUNT(DISTINCT member_key)
+    comment: Unique members with a fulfilled purchase
+    display_name: Distinct Members
+    synonyms: [unique members, customers, buyers]
+  - name: Distinct Orders
+    expr: COUNT(DISTINCT order_key)
+    comment: Unique orders with a fulfilled line
+    display_name: Distinct Orders
+  - name: Avg Recognized Revenue per Member
+    expr: MEASURE(`Recognized Revenue`) / NULLIF(MEASURE(`Distinct Members`), 0)
+    comment: Average recognized revenue per purchasing member
+    display_name: Avg Recognized Revenue per Member
+    format:
+      type: currency
+      currency_code: USD

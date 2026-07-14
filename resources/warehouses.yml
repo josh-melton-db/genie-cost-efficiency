@@ -1,0 +1,14 @@
+# Warehouse resources are created by provision_spaces.py (SDK) so each tier
+# gets an isolated serverless warehouse for exact SQL $ attribution.
+# This file documents the intended fleet and hosts the optional eval warehouse
+# when managed via the bundle instead of the provisioner.
+
+resources:
+  sql_warehouses:
+    genie_tco_eval:
+      name: "[${bundle.target}] genie-tco-eval"
+      enable_serverless_compute: true
+      warehouse_type: PRO
+      cluster_size: ${var.warehouse_size}
+      auto_stop_mins: 10
+      max_num_clusters: 1

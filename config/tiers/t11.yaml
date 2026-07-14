@@ -1,0 +1,50 @@
+tier: T11
+name: prompt_matching_only
+axis: prompt_matching
+lever: entity_format_assistance
+intent: Entity matching + format assistance via column_configs only
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: ""
+sample_questions: []
+instructions:
+  text: ""
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs:
+  dim_geo:
+    - column_name: region_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: country_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_product:
+    - column_name: product_family
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: product_class
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_campaign:
+    - column_name: campaign_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  fact_order_line:
+    - column_name: line_status
+      enable_format_assistance: true
+      enable_entity_matching: true
+benchmarks: []
+manual_steps: []

@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "a1b2c3d4e5f60000000000000000000a",
+        "question": ["What was total recognized revenue last fiscal month?"]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "demos.geniebench.dim_geo",
+        "description": ["Commercial geography dimension"],
+        "column_configs": [
+          {
+            "column_name": "region_code",
+            "description": ["Short region code NA, EMEA, APAC, LATAM"],
+            "synonyms": ["region", "geo", "market"],
+            "exclude": false,
+            "enable_format_assistance": true,
+            "enable_entity_matching": true
+          },
+          {
+            "column_name": "unused_etl_ts",
+            "exclude": true,
+            "enable_format_assistance": false,
+            "enable_entity_matching": false
+          }
+        ]
+      },
+      {
+        "identifier": "demos.geniebench.fact_order_line",
+        "description": ["Fulfilled order lines with recognition-dated net amounts"]
+      }
+    ],
+    "metric_views": [
+      {
+        "identifier": "demos.geniebench.mv_pulseforge_sales_rich",
+        "description": ["Rich governed PulseForge sales metrics"]
+      }
+    ]
+  },
+  "instructions": {
+    "text_instructions": [
+      {
+        "id": "b2c3d4e5f6a70000000000000000000b",
+        "content": [
+          "Revenue always means net recognized revenue on recognition_date.\n",
+          "Use the 4-4-5 fiscal calendar in dim_date.\n"
+        ]
+      }
+    ],
+    "example_question_sqls": [
+      {
+        "id": "c3d4e5f6a7b80000000000000000000c",
+        "question": ["Show sales for a specific region"],
+        "sql": [
+          "SELECT SUM(net_recognized_amount) AS revenue\n",
+          "FROM demos.geniebench.fact_order_line ol\n",
+          "JOIN demos.geniebench.dim_geo g ON ol.geo_key = g.geo_key\n",
+          "WHERE g.region_code = :region_code\n"
+        ],
+        "parameters": [
+          {
+            "name": "region_code",
+            "type_hint": "STRING",
+            "description": ["Region code such as EMEA"],
+            "default_value": {"values": ["EMEA"]}
+          }
+        ],
+        "usage_guidance": ["Use when the user filters revenue by a specific region code"]
+      }
+    ],
+    "sql_functions": [
+      {
+        "id": "d4e5f6a7b8c90000000000000000000d",
+        "identifier": "demos.geniebench.fn_recognized_revenue_last_fiscal_month"
+      }
+    ],
+    "join_specs": [
+      {
+        "id": "e5f6a7b8c9d00000000000000000000e",
+        "left": {"identifier": "demos.geniebench.fact_order_line", "alias": "ol"},
+        "right": {"identifier": "demos.geniebench.dim_geo", "alias": "g"},
+        "sql": [
+          "`ol`.`geo_key` = `g`.`geo_key`",
+          "--rt=FROM_RELATIONSHIP_TYPE_MANY_TO_ONE--"
+        ],
+        "comment": ["Order lines to geo"],
+        "instruction": ["Use when breaking out revenue by region"]
+      }
+    ],
+    "sql_snippets": {
+      "filters": [
+        {
+          "id": "f6a7b8c9d0e10000000000000000000f",
+          "display_name": "Fulfilled lines only",
+          "sql": ["ol.line_status = 'FULFILLED'"],
+          "synonyms": ["fulfilled", "recognized lines"],
+          "instruction": ["Always apply for revenue questions"]
+        }
+      ],
+      "expressions": [
+        {
+          "id": "a7b8c9d0e1f200000000000000000010",
+          "alias": "fiscal_year",
+          "display_name": "Fiscal Year",
+          "sql": ["d.fiscal_year"],
+          "synonyms": ["fy", "fiscal_yr"]
+        }
+      ],
+      "measures": [
+        {
+          "id": "b8c9d0e1f2a300000000000000000011",
+          "alias": "recognized_revenue",
+          "display_name": "Recognized Revenue",
+          "sql": ["SUM(ol.net_recognized_amount)"],
+          "synonyms": ["revenue", "sales", "recognized_sales"],
+          "instruction": ["Default revenue measure"]
+        }
+      ]
+    }
+  },
+  "benchmarks": {
+    "questions": [
+      {
+        "id": "c9d0e1f2a3b400000000000000000012",
+        "question": ["What was total recognized revenue last fiscal month?"],
+        "answer": [
+          {
+            "format": "SQL",
+            "content": ["SELECT 1 AS placeholder\n"]
+          }
+        ]
+      }
+    ]
+  }
+}

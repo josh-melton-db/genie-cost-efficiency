@@ -1,0 +1,32 @@
+tier: T1
+name: sample_questions_only
+axis: baseline
+lever: sample_questions
+intent: UX sample prompts only — no semantic teaching
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: "Connected fitness commerce data."
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How many active members in EMEA this fiscal year?"
+instructions:
+  text: ""
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps: []

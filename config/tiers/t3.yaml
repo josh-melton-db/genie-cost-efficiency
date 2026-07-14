@@ -1,0 +1,35 @@
+tier: T3
+name: metric_view_rich
+axis: data_surface
+lever: rich_metric_view
+intent: Fully-modeled semantic layer alone — rich sales MV + membership MV with period flags; no examples/instructions/functions
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_rich
+  - ${catalog}.${schema}.mv_pulseforge_membership
+description: |
+  PulseForge governed sales + membership metrics. Revenue always means
+  Recognized Revenue. Fiscal windows use Is Last Fiscal Month / Quarter /
+  Current FYTD flags. Active members use Active Members Approx on the
+  membership metric view (exact definition lives on conformed MVs).
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+instructions:
+  # Intentionally empty — pure semantic-layer proof (flags + measures + synonyms).
+  text: ""
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Confirm rich + membership MVs appear in Genie UI with period flags."
+  - "Tag metric views certified."

@@ -1,0 +1,265 @@
+{
+  "datasets": [
+    {
+      "name": "metric_tco",
+      "displayName": "Metric TCO by Tier",
+      "query": "SELECT * FROM ${catalog}.${schema}.metric_tco ORDER BY cost_per_correct_usd ASC NULLS LAST"
+    },
+    {
+      "name": "metric_tco_by_axis",
+      "displayName": "TCO by Curation Axis",
+      "query": "SELECT * FROM ${catalog}.${schema}.metric_tco_by_axis ORDER BY avg_cost_per_correct_usd ASC NULLS LAST"
+    },
+    {
+      "name": "dim_tier",
+      "displayName": "Tier Dimension",
+      "query": "SELECT * FROM ${catalog}.${schema}.dim_tier ORDER BY tier"
+    },
+    {
+      "name": "fact_tier_cost",
+      "displayName": "Tier Cost Breakdown",
+      "query": "SELECT * FROM ${catalog}.${schema}.fact_tier_cost"
+    },
+    {
+      "name": "fact_benchmark_answer",
+      "displayName": "Per-question Answers",
+      "query": "SELECT tier, question_id, attempt, status, correct, failure_type, latency_ms, LEFT(generated_sql, 200) AS sql_preview FROM ${catalog}.${schema}.fact_benchmark_answer"
+    },
+    {
+      "name": "metric_tco_above_floor",
+      "displayName": "TCO among tiers above quality floor",
+      "query": "SELECT * FROM ${catalog}.${schema}.metric_tco WHERE above_quality_floor ORDER BY cost_per_correct_usd ASC NULLS LAST"
+    }
+  ],
+  "pages": [
+    {
+      "name": "tco_overview",
+      "displayName": "TCO Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "cost_per_correct",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco",
+                  "fields": [
+                    {"name": "tier", "expression": "`tier`"},
+                    {"name": "cost_per_correct_usd", "expression": "`cost_per_correct_usd`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {"fieldName": "tier", "displayName": "Tier"},
+                "y": {"fieldName": "cost_per_correct_usd", "displayName": "$ / correct answer"}
+              },
+              "frame": {
+                "title": "Primary metric: $ per correct answer (LLM + warehouse)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "cost_per_correct_by_axis",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco_by_axis",
+                  "fields": [
+                    {"name": "axis", "expression": "`axis`"},
+                    {"name": "avg_cost_per_correct_usd", "expression": "`avg_cost_per_correct_usd`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {"fieldName": "axis", "displayName": "Curation axis"},
+                "y": {"fieldName": "avg_cost_per_correct_usd", "displayName": "Avg $ / correct"}
+              },
+              "frame": {
+                "title": "$/correct by curation lever (axis)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 6, "y": 0, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "llm_vs_warehouse",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco",
+                  "fields": [
+                    {"name": "tier", "expression": "`tier`"},
+                    {"name": "genie_cost_usd", "expression": "`genie_cost_usd`"},
+                    {"name": "warehouse_cost_usd", "expression": "`warehouse_cost_usd`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {"fieldName": "tier", "displayName": "Tier"},
+                "y": {"fieldName": "genie_cost_usd", "displayName": "LLM $"},
+                "y2": {"fieldName": "warehouse_cost_usd", "displayName": "Warehouse $"}
+              },
+              "frame": {
+                "title": "LLM vs warehouse cost (H1/H4/H5)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 0, "y": 6, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "accuracy_by_axis",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco_by_axis",
+                  "fields": [
+                    {"name": "axis", "expression": "`axis`"},
+                    {"name": "avg_first_pass_accuracy", "expression": "`avg_first_pass_accuracy`"},
+                    {"name": "avg_eventual_accuracy", "expression": "`avg_eventual_accuracy`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {"fieldName": "axis", "displayName": "Axis"},
+                "y": {"fieldName": "avg_first_pass_accuracy", "displayName": "Avg first-pass accuracy"}
+              },
+              "frame": {
+                "title": "Accuracy by curation axis (T0 is contamination control)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 6, "y": 6, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "bytes_scanned",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco",
+                  "fields": [
+                    {"name": "tier", "expression": "`tier`"},
+                    {"name": "bytes_scanned", "expression": "`bytes_scanned`"},
+                    {"name": "bytes_per_correct", "expression": "`bytes_per_correct`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {"fieldName": "tier", "displayName": "Tier"},
+                "y": {"fieldName": "bytes_scanned", "displayName": "Bytes scanned"}
+              },
+              "frame": {
+                "title": "Warehouse scan volume by tier (SQL cost differentiator)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 0, "y": 12, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "cost_vs_accuracy",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco",
+                  "fields": [
+                    {"name": "tier", "expression": "`tier`"},
+                    {"name": "axis", "expression": "`axis`"},
+                    {"name": "eventual_accuracy", "expression": "`eventual_accuracy`"},
+                    {"name": "total_cost_usd", "expression": "`total_cost_usd`"},
+                    {"name": "waste_index", "expression": "`waste_index`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {"fieldName": "eventual_accuracy", "displayName": "Accuracy"},
+                "y": {"fieldName": "total_cost_usd", "displayName": "Total $"},
+                "label": {"fieldName": "tier"}
+              },
+              "frame": {
+                "title": "Cost vs accuracy scatter (lower-right is best TCO)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 6, "y": 12, "width": 6, "height": 6}
+        },
+        {
+          "widget": {
+            "name": "ranked_above_floor",
+            "queries": [
+              {
+                "name": "main",
+                "query": {
+                  "datasetName": "metric_tco_above_floor",
+                  "fields": [
+                    {"name": "tier", "expression": "`tier`"},
+                    {"name": "lever", "expression": "`lever`"},
+                    {"name": "cost_per_correct_usd", "expression": "`cost_per_correct_usd`"},
+                    {"name": "eventual_accuracy", "expression": "`eventual_accuracy`"}
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "frame": {
+                "title": "TCO ranking among tiers above quality floor (≥50%)",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {"x": 0, "y": 18, "width": 12, "height": 6}
+        }
+      ]
+    }
+  ]
+}

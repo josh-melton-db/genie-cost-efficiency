@@ -1,0 +1,68 @@
+# Genie TCO Benchmark — Databricks Asset Bundle
+# Profile/catalog are NOT auto-selected. Set via CLI:
+#   databricks bundle validate -t dev --profile <PROFILE>
+#   databricks bundle deploy -t demo --profile <PROFILE> --var="catalog=<CATALOG>"
+#
+# Per-tier space/warehouse/SP IDs live in:
+#   src/genie_bench/spaces/provisioned_state.json
+#   resources/provisioned_ids.auto.yml (generated)
+
+bundle:
+  name: genie-tco-benchmark
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog for benchmark data and results
+    default: genie_tco
+  schema:
+    description: Schema within the catalog
+    default: bench
+  scale_profile:
+    description: Data volume profile — dev | demo | enterprise
+    default: demo
+  warehouse_size:
+    description: Serverless warehouse size held constant across tiers
+    default: Medium
+  raw_volume_name:
+    description: UC Volume name for raw synthetic files
+    default: raw
+  secrets_scope:
+    description: Secret scope holding per-tier SP client credentials
+    default: genie-tco-bench
+  tiers:
+    description: Comma-separated tier keys to provision/run
+    default: "t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23"
+  tiers_demo_subset:
+    description: Curated subset for demo/enterprise headline TCO
+    default: "t0,t1,t3,t4,t5,t16,t22"
+  warehouse_id_eval:
+    description: Neutral eval warehouse (filled by provision_spaces)
+    default: ""
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      scale_profile: dev
+      catalog: genie_tco
+      schema: bench_dev
+
+  demo:
+    mode: development
+    variables:
+      scale_profile: demo
+      catalog: genie_tco
+      schema: bench
+      tiers: "t0,t1,t3,t4,t5,t16,t22"
+
+  enterprise:
+    mode: production
+    variables:
+      scale_profile: enterprise
+      catalog: genie_tco
+      schema: bench_enterprise
+      tiers: "t0,t1,t3,t4,t5,t16,t22"

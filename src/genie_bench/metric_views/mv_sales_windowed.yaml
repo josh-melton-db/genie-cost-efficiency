@@ -1,0 +1,169 @@
+version: 1.1
+# Rich sales MV + experimental window measures for FYTD / period-over-period.
+# Requires preview channel. Relative-period flags retained as a reliable fallback.
+source: ${catalog}.${schema}.fact_order_line
+comment: >
+  PulseForge sales metrics with experimental window measures (FYTD, prior-month,
+  MoM growth) plus relative-period flags. Owner: genie-tco-benchmark.
+  MUST be tagged certified. Window measures are Experimental.
+
+joins:
+  - name: dim_date
+    source: ${catalog}.${schema}.dim_date
+    on: source.recognition_date_key = dim_date.date_key
+    rely:
+      at_most_one_match: true
+  - name: dim_geo
+    source: ${catalog}.${schema}.dim_geo
+    on: source.geo_key = dim_geo.geo_key
+    rely:
+      at_most_one_match: true
+  - name: dim_product
+    source: ${catalog}.${schema}.dim_product
+    on: source.product_key = dim_product.product_key
+    rely:
+      at_most_one_match: true
+  - name: dim_member
+    source: ${catalog}.${schema}.dim_member
+    on: source.member_key = dim_member.member_key
+    rely:
+      at_most_one_match: true
+  - name: dim_campaign
+    source: ${catalog}.${schema}.dim_campaign
+    on: source.campaign_key = dim_campaign.campaign_key
+    rely:
+      at_most_one_match: true
+  - name: anchor
+    source: ${catalog}.${schema}.v_fiscal_anchor
+    on: "1 = 1"
+    rely:
+      at_most_one_match: true
+
+filter: line_status = 'FULFILLED'
+
+fields:
+  - name: Calendar Date
+    expr: dim_date.calendar_date
+    comment: Recognition calendar date — window order field
+  - name: Fiscal Year
+    expr: dim_date.fiscal_year
+    synonyms: [fy, fiscal_yr]
+  - name: Fiscal Month
+    expr: dim_date.fiscal_month
+    synonyms: [fm, month]
+  - name: Fiscal Quarter
+    expr: dim_date.fiscal_quarter
+    synonyms: [fq, quarter]
+  - name: Fiscal Month Start
+    expr: DATE_TRUNC('MONTH', dim_date.calendar_date)
+    comment: Calendar month trunc used for window offsets (approx fiscal month grain)
+  - name: Is Last Fiscal Month
+    expr: (dim_date.fiscal_year = anchor.last_fm_year AND dim_date.fiscal_month = anchor.last_fm_month)
+    synonyms: [last month, previous fiscal month, last fiscal month]
+  - name: Is Last Fiscal Quarter
+    expr: (dim_date.fiscal_year = anchor.last_fq_year AND dim_date.fiscal_quarter = anchor.last_fq)
+    synonyms: [last quarter, previous fiscal quarter]
+  - name: Is Current Fiscal Year
+    expr: (dim_date.fiscal_year = anchor.current_fy)
+    synonyms: [this fiscal year, current fy]
+  - name: Is Current FYTD
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_month <= anchor.current_fm)
+    synonyms: [fytd, fiscal year to date, year to date, ytd]
+  - name: Is Current Fiscal Q1
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_quarter = 1)
+    synonyms: [q1, fiscal q1]
+  - name: Is Current Fiscal Q2
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_quarter = 2)
+    synonyms: [q2, fiscal q2]
+  - name: Is June Spike Window
+    expr: (dim_date.fiscal_year = 2025 AND dim_date.fiscal_month = 6)
+    synonyms: [june spike, june revenue]
+  - name: Region
+    expr: dim_geo.region_name
+    synonyms: [geo, geography, market]
+  - name: Region Code
+    expr: dim_geo.region_code
+  - name: Product Family
+    expr: dim_product.product_family
+    synonyms: [family, device family]
+  - name: Product Class
+    expr: dim_product.product_class
+  - name: SKU Code
+    expr: dim_product.sku_code
+    synonyms: [sku, product_code]
+  - name: Campaign Code
+    expr: dim_campaign.campaign_code
+  - name: Campaign Name
+    expr: dim_campaign.campaign_name
+  - name: Member ID
+    expr: dim_member.member_id
+    synonyms: [customer_id, user_id, member]
+  - name: Member Handle
+    expr: dim_member.display_handle
+  - name: Member Tier
+    expr: dim_member.member_tier
+
+measures:
+  - name: Recognized Revenue
+    expr: SUM(net_recognized_amount)
+    synonyms: [revenue, sales, recognized sales, net revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Hardware Revenue
+    expr: SUM(net_recognized_amount) FILTER (WHERE dim_product.product_class IN ('DEVICE', 'ACCESSORY'))
+    synonyms: [hardware sales, device revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Order Line Count
+    expr: COUNT(1)
+  - name: Distinct Members
+    expr: COUNT(DISTINCT member_key)
+  - name: Current Month Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Windowed current calendar-month revenue (semiadditive last)
+    window:
+      - order: Fiscal Month Start
+        range: current
+        semiadditive: last
+    format:
+      type: currency
+      currency_code: USD
+  - name: Prior Month Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Revenue shifted back one calendar month via window offset
+    window:
+      - order: Fiscal Month Start
+        range: current
+        semiadditive: last
+        offset: -1 month
+    format:
+      type: currency
+      currency_code: USD
+  - name: MoM Revenue Growth
+    expr: (MEASURE(`Current Month Revenue`) - MEASURE(`Prior Month Revenue`)) / NULLIF(MEASURE(`Prior Month Revenue`), 0)
+    comment: Month-over-month recognized revenue growth rate
+    synonyms: [mom growth, month over month]
+    format:
+      type: percentage
+  - name: FYTD Window Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Cumulative revenue within each fiscal year via dual window specs
+    window:
+      - order: Calendar Date
+        range: cumulative
+        semiadditive: last
+      - order: Fiscal Year
+        range: current
+        semiadditive: last
+    format:
+      type: currency
+      currency_code: USD
+  - name: Last Fiscal Month Revenue Flag
+    expr: SUM(net_recognized_amount) FILTER (WHERE dim_date.fiscal_year = anchor.last_fm_year AND dim_date.fiscal_month = anchor.last_fm_month)
+    comment: Flag-based last fiscal month revenue (reliable fallback to window measures)
+    synonyms: [last month revenue, previous fiscal month sales]
+    format:
+      type: currency
+      currency_code: USD

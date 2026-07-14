@@ -1,0 +1,71 @@
+tier: T18
+name: parameterized_trusted_examples
+axis: trusted_assets
+lever: parameterized_examples
+intent: Parameterized example SQL queries (trusted assets) only
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: ""
+sample_questions: []
+instructions:
+  text: ""
+  example_sqls:
+    - title: Recognized revenue for a specific region
+      usage: Region-filtered recognized revenue
+      sql: |
+        SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue
+        FROM ${catalog}.${schema}.fact_order_line ol
+        JOIN ${catalog}.${schema}.dim_geo g ON ol.geo_key = g.geo_key
+        WHERE ol.line_status = 'FULFILLED'
+          AND g.region_code = :region_code
+      parameters:
+        - name: region_code
+          type_hint: STRING
+          description: Region code such as EMEA or NA
+          default: EMEA
+    - title: Recognized revenue for a specific fiscal year and month
+      usage: Fiscal period revenue
+      sql: |
+        SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue
+        FROM ${catalog}.${schema}.fact_order_line ol
+        JOIN ${catalog}.${schema}.dim_date d ON ol.recognition_date_key = d.date_key
+        WHERE ol.line_status = 'FULFILLED'
+          AND d.fiscal_year = :fiscal_year
+          AND d.fiscal_month = :fiscal_month
+      parameters:
+        - name: fiscal_year
+          type_hint: INTEGER
+          description: Fiscal year number
+          default: "2025"
+        - name: fiscal_month
+          type_hint: INTEGER
+          description: Fiscal month 1-12
+          default: "6"
+    - title: Active members in a region this fiscal year
+      usage: Active member counts by region
+      sql: |
+        SELECT COUNT(*) AS active_members
+        FROM ${catalog}.${schema}.dim_member m
+        JOIN ${catalog}.${schema}.dim_geo g ON m.home_geo_key = g.geo_key
+        WHERE g.region_code = :region_code
+      parameters:
+        - name: region_code
+          type_hint: STRING
+          description: Region code
+          default: EMEA
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps: []

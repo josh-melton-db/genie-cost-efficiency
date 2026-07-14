@@ -1,0 +1,45 @@
+tier: T23
+name: distractor_surface_minimal
+axis: data_surface
+lever: many_tables_minimal_curation
+intent: Near 30-table distractor-heavy surface with minimal curation
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+  - ${catalog}.${schema}.distractor_orders_v1
+  - ${catalog}.${schema}.distractor_orders_v2
+  - ${catalog}.${schema}.distractor_customers_legacy
+  - ${catalog}.${schema}.distractor_sales_flat
+  - ${catalog}.${schema}.distractor_mrr_daily
+  - ${catalog}.${schema}.distractor_workouts_raw
+  - ${catalog}.${schema}.distractor_returns_old
+  - ${catalog}.${schema}.distractor_campaign_spend
+  - ${catalog}.${schema}.distractor_geo_iso
+  - ${catalog}.${schema}.distractor_product_catalog_ext
+  - ${catalog}.${schema}.distractor_member_pii_shadow
+  - ${catalog}.${schema}.distractor_fx_rates
+  - ${catalog}.${schema}.distractor_fiscal_alt
+  - ${catalog}.${schema}.distractor_nps_scores
+  - ${catalog}.${schema}.distractor_support_tickets
+description: Broad commerce + legacy extracts. Prefer gold facts over distractor_* tables.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+instructions:
+  text: |
+    Prefer fact_order_line + dim_date for revenue. Ignore distractor_* tables unless explicitly asked.
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps: []

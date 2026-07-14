@@ -1,0 +1,45 @@
+tier: T25
+name: conformed_mv_wide_prebucketed
+axis: mv_centric
+lever: conformed_wide_prebucketed
+intent: Wide pre-bucketed sales MV (dedicated period measures) + membership MV — OTM stand-in when one-to-many is unavailable
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_conformed_wide
+  - ${catalog}.${schema}.mv_pulseforge_membership
+description: |
+  PulseForge wide pre-bucketed sales metrics plus membership. Prefer dedicated
+  period measures (Last Fiscal Month Revenue, FYTD Recognized Revenue, etc.)
+  instead of inventing fiscal filters. Native one-to-many member-spine MVs were
+  blocked on this serverless warehouse; pre-bucketed amounts preserve the
+  "wide measures" philosophy.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+instructions:
+  text: |
+    Prefer dedicated measures on mv_pulseforge_conformed_wide:
+    - Last fiscal month → MEASURE(`Last Fiscal Month Revenue`)
+    - Last fiscal quarter by region → MEASURE(`Last Fiscal Quarter Revenue`) GROUP BY Region
+    - FYTD / hardware top members → MEASURE(`Hardware FYTD Revenue`) GROUP BY `Member ID` (not Member Key)
+    - Q1 vs Q2 → MEASURE(`Q1 Recognized Revenue`) vs MEASURE(`Q2 Recognized Revenue`) by Product Family
+    - June spike → MEASURE(`June Spike Revenue`) by Product Family AND Campaign
+    Membership (mv_pulseforge_membership):
+    - Active members → MEASURE(`Active Members Approx`) + Region Code = EMEA + Is Current Fiscal Year
+    - Churn campaigns → MEASURE(`Retention Window Churn Rate`) by Campaign Code ASC
+      (or filter `Is Retention Push Window` with MEASURE(`Churn Rate`))
+    - Business health → FYTD Recognized Revenue + Ending MRR + Churn Rate
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Note: native one-to-many MV blocked on serverless SQL; using pre-bucketed wide orders MV."

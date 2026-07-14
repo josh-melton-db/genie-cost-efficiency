@@ -1,0 +1,11 @@
+resources:
+  dashboards:
+    genie_tco:
+      display_name: "[${bundle.target}] Genie TCO Benchmark"
+      file_path: ../dashboards/genie_tco.lvdash.json
+      warehouse_id: ${resources.sql_warehouses.genie_tco_eval.id}
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${var.schema}
+      permissions:
+        - level: CAN_RUN
+          group_name: users

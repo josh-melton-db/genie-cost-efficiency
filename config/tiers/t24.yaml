@@ -1,0 +1,44 @@
+tier: T24
+name: conformed_mv_sql_source
+axis: mv_centric
+lever: conformed_sql_source
+intent: Single conformed metric view with fiscal flags + exact active-member logic baked into a SQL-query source
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_conformed_sqlsrc
+description: |
+  PulseForge conformed KPIs. All fiscal windows and active-member definitions are
+  precomputed in the metric view source. Prefer MEASURE() + boolean flag filters.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+  - "Recognized revenue for product code ZX-NOEXIST-999"
+  - "Sum of recognized sales for the previous fiscal calendar month"
+instructions:
+  text: |
+    Use only mv_pulseforge_conformed_sqlsrc.
+    Prefer MEASURE(`Recognized Revenue`) / MEASURE(`Hardware Revenue`) / MEASURE(`Active Members`)
+    / MEASURE(`Ending MRR`) / MEASURE(`Churn Rate`) with flag filters:
+    - Last fiscal month → `Is Last Fiscal Month`
+    - Last fiscal quarter → `Is Last Fiscal Quarter`
+    - FYTD / this fiscal year → `Is Current FYTD` or `Is Current Fiscal Year`
+    - Q1 vs Q2 → `Is Current Fiscal Q1` / `Is Current Fiscal Q2`
+    - June spike → `Is June Spike Window` + Product Family / Campaign
+    - Churn campaigns → `Is Retention Push Window`, rank by Churn Rate ASC
+    - Active members → MEASURE(`Active Members`) + Region Code = 'EMEA' + `Is Current Fiscal Year`
+    - Business health → FYTD Recognized Revenue + Ending MRR + Churn Rate
+    Fact Family distinguishes order vs subscription rows; measures already handle NULLs.
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Confirm conformed SQL-source MV is certified and listed as a metric view."

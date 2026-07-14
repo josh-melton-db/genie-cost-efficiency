@@ -1,0 +1,52 @@
+tier: T19
+name: rich_mv_plus_instructions
+axis: semantic_combo
+lever: rich_mv_plus_text
+intent: Semantic layer + concise NL instructions (governance-forward, no examples/functions)
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_rich
+  - ${catalog}.${schema}.mv_pulseforge_membership
+description: |
+  PulseForge governed sales + membership metrics via certified metric views,
+  guided by concise natural-language instructions.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+instructions:
+  text: |
+    Persona: Finance + growth analyst for PulseForge connected fitness.
+    Use only the certified metric views. Prefer MEASURE() + dimension/flag filters.
+
+    Revenue definitions:
+    - Official revenue / sales / recognized sales = MEASURE(`Recognized Revenue`)
+      on mv_pulseforge_sales_rich. Never use Gross Line Amount unless asked.
+    - Hardware revenue = MEASURE(`Hardware Revenue`) (DEVICE + ACCESSORY).
+
+    Fiscal calendar (4-4-5) — NEVER invent calendar YEAR()/MONTH()/QUARTER():
+    - Last / previous fiscal month → filter `Is Last Fiscal Month`
+    - Last fiscal quarter → filter `Is Last Fiscal Quarter`
+    - This fiscal year / FYTD → filter `Is Current Fiscal Year` or `Is Current FYTD`
+    - Fiscal Q1 vs Q2 (current year) → filter `Is Current Fiscal Q1` / `Is Current Fiscal Q2`
+    - June spike / device launch → filter `Is June Spike Window`, break out Product Family + Campaign
+
+    Membership (mv_pulseforge_membership):
+    - Active members ≈ MEASURE(`Active Members Approx`) with Region Code = EMEA and `Is Current Fiscal Year`
+    - Business health KPI pack = Recognized Revenue FYTD + Ending MRR FYTD + Churn Rate FYTD
+    - Churn-reduction campaigns → filter `Is Retention Push Window`, rank by MEASURE(`Churn Rate`) ASC
+      (lower churn = better retention); expect RETAIN-PLUS-2025Q2 near the top.
+
+    Empty SKU / nonexistent product → return zero/empty, do not hallucinate rows.
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps: []

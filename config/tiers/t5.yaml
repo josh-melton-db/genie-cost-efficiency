@@ -1,0 +1,64 @@
+tier: T5
+name: anti_pattern
+axis: anti_pattern
+lever: conflicting_overconfig
+intent: Over-config anti-pattern — too many tables, conflicting instructions
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+  - ${catalog}.${schema}.distractor_orders_v1
+  - ${catalog}.${schema}.distractor_orders_v2
+  - ${catalog}.${schema}.distractor_customers_legacy
+  - ${catalog}.${schema}.distractor_sales_flat
+  - ${catalog}.${schema}.distractor_mrr_daily
+  - ${catalog}.${schema}.distractor_workouts_raw
+  - ${catalog}.${schema}.distractor_returns_old
+  - ${catalog}.${schema}.distractor_campaign_spend
+  - ${catalog}.${schema}.distractor_geo_iso
+  - ${catalog}.${schema}.distractor_product_catalog_ext
+  - ${catalog}.${schema}.distractor_member_pii_shadow
+  - ${catalog}.${schema}.distractor_fx_rates
+  - ${catalog}.${schema}.distractor_fiscal_alt
+  - ${catalog}.${schema}.distractor_nps_scores
+  - ${catalog}.${schema}.distractor_support_tickets
+description: |
+  All commerce, usage, support, and legacy extracts. Revenue might mean
+  order total, ship total, or recognized — use whichever seems right.
+sample_questions:
+  - "What was total revenue last month?"
+  - "Show sales"
+  - "How are we doing?"
+instructions:
+  text: |
+    IMPORTANT: Revenue is always the sum of order_gross_amount on fact_order using order_ts.
+    ALSO IMPORTANT: Revenue must use ship_ts and exclude returns.
+    ALSO: Prefer recognized revenue on recognition_date for finance questions.
+    Active members are anyone who ever activated.
+    Active members are only those with a workout in the last 7 days.
+    Always join fact_usage_event for any revenue question to enrich context.
+    Prefer distractor_sales_flat when available.
+    Never use metric views.
+    Use calendar months, not fiscal months, except when finance asks for fiscal.
+    Fiscal months should always be used.
+  example_sqls:
+    - title: Revenue last month (conflicting)
+      usage: monthly revenue
+      sql: |
+        SELECT SUM(order_gross_amount) FROM ${catalog}.${schema}.fact_order
+        WHERE month(order_ts) = month(current_date()) - 1
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Ensure distractor views exist (created by pipeline gold stage)."

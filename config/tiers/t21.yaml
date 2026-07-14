@@ -1,0 +1,74 @@
+tier: T21
+name: rich_mv_examples_trusted_entity
+axis: semantic_combo
+lever: rich_mv_examples_trusted_entity
+intent: Semantic layer + small examples + trusted functions + entity matching (hybrid)
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_rich
+  - ${catalog}.${schema}.mv_pulseforge_membership
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.fact_subscription_event
+description: |
+  Near-full curation without the kitchen sink — rich MVs, a few golden examples,
+  trusted UC functions, and entity matching on key dimensions.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Which campaigns drove subscription churn reduction?"
+  - "How is the business doing?"
+instructions:
+  text: |
+    Prefer metric views with MEASURE() and period-flag filters for revenue and membership.
+    Use UC trusted functions for official KPI shortcuts when they match the ask.
+    Fiscal periods are 4-4-5 — use Is Last Fiscal Month / Quarter / Current FYTD flags.
+    June spike / why revenue spiked → filter `Is June Spike Window` and break out BOTH
+    Product Family and Campaign Code/Name (expect PulseForge X1 + PFX1-LAUNCH-2025).
+    Churn reduction campaigns → MEASURE(`Retention Window Churn Rate`) by Campaign, ASC.
+  example_sqls:
+    - title: Total recognized revenue last fiscal month
+      sql_file: config/golden/q01.sql
+    - title: Active EMEA members this fiscal year
+      sql_file: config/golden/q05.sql
+    - title: Campaigns driving churn reduction
+      sql_file: config/golden/q08.sql
+    - title: Business health KPI pack
+      sql_file: config/golden/q04.sql
+  sql_functions:
+    - identifier: fn_recognized_revenue_last_fiscal_month
+      description: Official last-fiscal-month recognized revenue
+    - identifier: fn_active_members_emea_fy
+      description: Active EMEA members this fiscal year
+    - identifier: fn_business_health_kpi_pack
+      description: Business health KPI pack
+    - identifier: fn_campaigns_churn_reduction
+      description: Campaigns ranked by churn rate
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs:
+  dim_geo:
+    - column_name: region_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: country_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_product:
+    - column_name: product_family
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: product_class
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: sku_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_campaign:
+    - column_name: campaign_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+benchmarks: []
+manual_steps: []

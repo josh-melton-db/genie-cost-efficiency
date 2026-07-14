@@ -1,0 +1,31 @@
+[project]
+name = "genie-tco-benchmark"
+version = "0.1.0"
+description = "Benchmark Genie curation tiers on total cost per correct answer"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "databricks-sdk>=0.40.0",
+  "dbldatagen>=0.4.0",
+  "Faker>=24.0.0",
+  "mlflow[databricks]>=2.20.0",
+  "pyyaml>=6.0",
+  "pandas>=2.0.0",
+  "requests>=2.31.0",
+  "tenacity>=8.2.0",
+]
+
+[project.scripts]
+genie-tco-generate = "genie_bench.data_gen.generate_raw:main"
+genie-tco-compile = "genie_bench.spaces.compile_space:main"
+genie-tco-provision = "genie_bench.spaces.provision_spaces:main"
+genie-tco-run = "genie_bench.runner.run_benchmark:main"
+genie-tco-eval = "genie_bench.eval.evaluate:main"
+genie-tco-cost = "genie_bench.cost.attribute_costs:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

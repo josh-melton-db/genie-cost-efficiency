@@ -1,0 +1,34 @@
+tier: T13
+name: business_glossary_text
+axis: instructions
+lever: glossary_text
+intent: Plain-text business glossary only (docs say prefer SQL over text)
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: ""
+sample_questions: []
+instructions:
+  text: |
+    Company glossary:
+    - Recognized revenue = SUM(net_recognized_amount) on fact_order_line where line_status='FULFILLED', dated by recognition_date_key via dim_date.
+    - Do not use order_ts, ship_ts, or order_gross_amount for revenue.
+    - Fiscal periods use dim_date 4-4-5 calendar (fiscal_year, fiscal_month, fiscal_quarter).
+    - Active member = ACTIVATE or RENEW in last 90 days with no CANCEL after last activate.
+    - Hardware revenue = product_class in (DEVICE, ACCESSORY).
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps: []

@@ -1,0 +1,163 @@
+tier: T20
+name: rich_mv_expressions_joins
+axis: semantic_combo
+lever: rich_mv_expressions_joins
+intent: Semantic layer + SQL expression snippets + join relationships (no example SQLs)
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_rich
+  - ${catalog}.${schema}.mv_pulseforge_membership
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.v_fiscal_anchor
+description: |
+  Rich PulseForge metric views plus curated join specs and SQL expression snippets
+  that encode fiscal flags and membership definitions.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Which campaigns drove subscription churn reduction?"
+  - "How is the business doing?"
+instructions:
+  text: |
+    Prefer certified metric views with MEASURE() and period-flag filters.
+    When querying raw facts, use the join specs and SQL snippets below.
+    Business health / "how is the business doing" → KPI pack from BOTH metric views:
+      MEASURE(`Recognized Revenue`) with `Is Current FYTD` on sales MV
+      + MEASURE(`Ending MRR`) with `Is Current FYTD` on membership MV
+      + MEASURE(`Churn Rate`) or MEASURE(`Retention Window Churn Rate`) on membership MV.
+    Churn-reduction campaigns → MEASURE(`Retention Window Churn Rate`) by Campaign Code ASC
+      (or Churn Rate filtered by `Is Retention Push Window`).
+    June spike → `Is June Spike Window` broken out by Product Family AND Campaign.
+  example_sqls: []
+  join_specs:
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_date
+      right_alias: d
+      sql: "`ol`.`recognition_date_key` = `d`.`date_key`"
+      relationship_type: many_to_one
+      instruction: Use for recognition-dated revenue (never order_ts/ship_ts)
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_geo
+      right_alias: g
+      sql: "`ol`.`geo_key` = `g`.`geo_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_product
+      right_alias: p
+      sql: "`ol`.`product_key` = `p`.`product_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_member
+      right_alias: m
+      sql: "`ol`.`member_key` = `m`.`member_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_campaign
+      right_alias: c
+      sql: "`ol`.`campaign_key` = `c`.`campaign_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_subscription_event
+      left_alias: se
+      right: ${catalog}.${schema}.dim_date
+      right_alias: d
+      sql: "`se`.`event_date_key` = `d`.`date_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_subscription_event
+      left_alias: se
+      right: ${catalog}.${schema}.dim_campaign
+      right_alias: c
+      sql: "`se`.`attribution_campaign_key` = `c`.`campaign_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_subscription_event
+      left_alias: se
+      right: ${catalog}.${schema}.dim_member
+      right_alias: m
+      sql: "`se`.`member_key` = `m`.`member_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.dim_member
+      left_alias: m
+      right: ${catalog}.${schema}.dim_geo
+      right_alias: g
+      sql: "`m`.`home_geo_key` = `g`.`geo_key`"
+      relationship_type: many_to_one
+      instruction: Member home geo for active-member region filters
+  sql_snippets:
+    measures:
+      - name: Recognized Revenue
+        alias: recognized_revenue
+        sql: "SUM(ol.net_recognized_amount)"
+        synonyms: [revenue, sales, recognized_sales]
+        usage: Default revenue; always with fulfilled filter
+      - name: Hardware Revenue
+        alias: hardware_revenue
+        sql: "SUM(CASE WHEN p.product_class IN ('DEVICE','ACCESSORY') THEN ol.net_recognized_amount ELSE 0 END)"
+        synonyms: [hardware sales, device revenue]
+        usage: Device + accessory recognized revenue
+      - name: Ending MRR
+        alias: ending_mrr
+        sql: "SUM(se.mrr_delta)"
+        synonyms: [mrr, subscription revenue]
+        usage: Net MRR movement
+      - name: Churn Rate
+        alias: churn_rate
+        sql: "COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END) / NULLIF(COUNT(DISTINCT se.member_key), 0)"
+        synonyms: [churn, cancel rate]
+        usage: Lower is better; use with retention push window filter
+      - name: Active Members Exact
+        alias: active_members
+        sql: |
+          COUNT(DISTINCT CASE
+            WHEN le.last_active_dt >= date_sub(current_date(), 90)
+             AND (le.last_cancel_dt IS NULL OR le.last_cancel_dt < le.last_active_dt)
+            THEN le.member_key END)
+        synonyms: [active members, active subscribers]
+        usage: Requires last_events CTE pattern from membership examples
+    filters:
+      - name: Fulfilled lines only
+        sql: "ol.line_status = 'FULFILLED'"
+        synonyms: [fulfilled, recognized lines]
+        usage: Always apply for revenue
+      - name: Last fiscal month
+        sql: "d.fiscal_year = (SELECT last_fm_year FROM ${catalog}.${schema}.v_fiscal_anchor) AND d.fiscal_month = (SELECT last_fm_month FROM ${catalog}.${schema}.v_fiscal_anchor)"
+        synonyms: [last month, previous fiscal month]
+        usage: Prefer MV flag `Is Last Fiscal Month` when querying the metric view
+      - name: Last fiscal quarter
+        sql: "d.fiscal_year = (SELECT last_fq_year FROM ${catalog}.${schema}.v_fiscal_anchor) AND d.fiscal_quarter = (SELECT last_fq FROM ${catalog}.${schema}.v_fiscal_anchor)"
+        synonyms: [last quarter, previous fiscal quarter]
+      - name: Current FYTD
+        sql: "d.fiscal_year = (SELECT current_fy FROM ${catalog}.${schema}.v_fiscal_anchor) AND d.fiscal_month <= (SELECT current_fm FROM ${catalog}.${schema}.v_fiscal_anchor)"
+        synonyms: [fytd, year to date]
+      - name: Retention push window
+        sql: "d.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30'"
+        synonyms: [retain plus window, churn campaign window]
+      - name: June spike window
+        sql: "d.fiscal_year = 2025 AND d.fiscal_month = 6"
+        synonyms: [june spike, device launch]
+      - name: EMEA region
+        sql: "g.region_code = 'EMEA'"
+        synonyms: [emea, europe middle east africa]
+    fields:
+      - name: Fiscal Year
+        alias: fiscal_year
+        sql: "d.fiscal_year"
+        synonyms: [fy, fiscal_yr]
+      - name: Fiscal Month
+        alias: fiscal_month
+        sql: "d.fiscal_month"
+        synonyms: [fm, month]
+      - name: Product Family
+        alias: product_family
+        sql: "p.product_family"
+        synonyms: [family, device family]
+column_configs: {}
+benchmarks: []
+manual_steps: []

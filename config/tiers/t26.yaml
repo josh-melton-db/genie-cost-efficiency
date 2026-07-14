@@ -1,0 +1,40 @@
+tier: T26
+name: semantic_layer_window_measures
+axis: mv_centric
+lever: window_measures
+intent: Semantic layer with experimental window measures for FYTD / MoM plus membership MV
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_windowed
+  - ${catalog}.${schema}.mv_pulseforge_membership
+description: |
+  PulseForge sales metrics with experimental window measures (FYTD, prior month, MoM)
+  plus membership MV for active members / churn / MRR. Period flags remain available
+  as a reliable fallback.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+instructions:
+  text: |
+    Prefer window measures when they match:
+    - MoM / prior month → MEASURE(`Prior Month Revenue`) / MEASURE(`MoM Revenue Growth`)
+    - FYTD window → MEASURE(`FYTD Window Revenue`)
+    For exact 4-4-5 last fiscal month, prefer MEASURE(`Last Fiscal Month Revenue Flag`)
+    or filter `Is Last Fiscal Month` on MEASURE(`Recognized Revenue`) — more reliable than
+    calendar-month window offsets against a fiscal calendar.
+    Membership questions use mv_pulseforge_membership (Active Members Approx, Churn Rate,
+    Ending MRR, Is Retention Push Window).
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Requires preview-channel warehouse for experimental window measures."

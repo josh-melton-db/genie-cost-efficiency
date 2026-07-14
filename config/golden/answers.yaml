@@ -1,0 +1,49 @@
+# Tolerances for execution-match scoring.
+# Exact expected values are computed at eval time by running golden SQL
+# against the generated gold tables — never hardcode scalars here.
+
+defaults:
+  numeric_relative_tolerance: 0.001
+  numeric_absolute_tolerance: 0.01
+  row_order_matters: false
+  compare_column_names: false
+
+per_question:
+  Q1:
+    primary_columns: [total_recognized_revenue]
+  Q2:
+    primary_columns: [region_name, recognized_revenue]
+    key_columns: [region_name]
+  Q3:
+    primary_columns: [member_id, hardware_revenue_fytd]
+    key_columns: [member_id]
+    row_order_matters: true
+    top_n: 10
+  Q4:
+    scoring: llm_judge
+    judge_rubric: |
+      Pass if Genie either (a) asks a clarifying question about which KPI,
+      or (b) returns a KPI pack covering recognized revenue, MRR/subscription,
+      and churn. Fail if it invents numbers without SQL or uses order_ts gross.
+  Q5:
+    primary_columns: [active_members_emea]
+  Q6:
+    primary_columns: [product_family, q1_revenue, q2_revenue]
+    key_columns: [product_family]
+  Q7:
+    scoring: llm_judge
+    judge_rubric: |
+      Pass if answer attributes the June 2025 spike primarily to PulseForge X1
+      (product family) and/or campaign PFX1-LAUNCH-2025. Fail if it blames
+      unrelated causes or returns only a total without attribution.
+  Q8:
+    primary_columns: [campaign_code, churn_rate]
+    key_columns: [campaign_code]
+    must_include_values:
+      campaign_code: [RETAIN-PLUS-2025Q2]
+  Q9:
+    primary_columns: [recognized_revenue]
+    expect_zero_or_empty: true
+  Q10:
+    primary_columns: [total_recognized_revenue]
+    same_as: Q1

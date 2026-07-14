@@ -1,0 +1,239 @@
+version: 1.1
+# Conformed semantic layer with business logic baked into a SQL-query source.
+# Philosophy: push fiscal flags + exact active-member + retention window into the
+# source rather than relying on Genie to invent calendar math or cohort SQL.
+# UNION of order-line and subscription-event grains with a fact_family discriminator.
+source: |
+  WITH anchor AS (
+    SELECT * FROM ${catalog}.${schema}.v_fiscal_anchor
+  ),
+  fy AS (
+    SELECT current_fy AS fiscal_year FROM anchor
+  ),
+  active AS (
+    SELECT
+      se.member_key,
+      MAX(CASE WHEN se.event_type IN ('ACTIVATE', 'RENEW') THEN d.calendar_date END) AS last_active_dt,
+      MAX(CASE WHEN se.event_type = 'CANCEL' THEN d.calendar_date END) AS last_cancel_dt
+    FROM ${catalog}.${schema}.fact_subscription_event se
+    JOIN ${catalog}.${schema}.dim_date d ON se.event_date_key = d.date_key
+    JOIN fy ON d.fiscal_year = fy.fiscal_year
+    GROUP BY se.member_key
+  ),
+  active_flag AS (
+    SELECT
+      member_key,
+      CASE
+        WHEN last_active_dt >= date_sub(current_date(), 90)
+         AND (last_cancel_dt IS NULL OR last_cancel_dt < last_active_dt)
+        THEN TRUE ELSE FALSE
+      END AS is_active_member
+    FROM active
+  ),
+  order_rows AS (
+    SELECT
+      'order' AS fact_family,
+      ol.order_line_key,
+      ol.order_key,
+      ol.member_key,
+      ol.net_recognized_amount,
+      ol.gross_amount,
+      CAST(NULL AS DOUBLE) AS mrr_delta,
+      CAST(NULL AS STRING) AS event_type,
+      d.fiscal_year,
+      d.fiscal_month,
+      d.fiscal_quarter,
+      d.calendar_date,
+      (d.fiscal_year = a.last_fm_year AND d.fiscal_month = a.last_fm_month) AS is_last_fiscal_month,
+      (d.fiscal_year = a.last_fq_year AND d.fiscal_quarter = a.last_fq) AS is_last_fiscal_quarter,
+      (d.fiscal_year = a.current_fy) AS is_current_fiscal_year,
+      (d.fiscal_year = a.current_fy AND d.fiscal_month <= a.current_fm) AS is_current_fytd,
+      (d.fiscal_year = a.current_fy AND d.fiscal_quarter = 1) AS is_current_fiscal_q1,
+      (d.fiscal_year = a.current_fy AND d.fiscal_quarter = 2) AS is_current_fiscal_q2,
+      (d.fiscal_year = 2025 AND d.fiscal_month = 6) AS is_june_spike_window,
+      CAST(FALSE AS BOOLEAN) AS is_retention_push_window,
+      g.region_name,
+      g.region_code,
+      p.product_family,
+      p.product_class,
+      p.sku_code,
+      c.campaign_code,
+      c.campaign_name,
+      m.member_id,
+      m.display_handle,
+      m.member_tier,
+      COALESCE(af.is_active_member, FALSE) AS is_active_member
+    FROM ${catalog}.${schema}.fact_order_line ol
+    JOIN ${catalog}.${schema}.dim_date d ON ol.recognition_date_key = d.date_key
+    JOIN ${catalog}.${schema}.dim_geo g ON ol.geo_key = g.geo_key
+    JOIN ${catalog}.${schema}.dim_product p ON ol.product_key = p.product_key
+    JOIN ${catalog}.${schema}.dim_member m ON ol.member_key = m.member_key
+    JOIN ${catalog}.${schema}.dim_campaign c ON ol.campaign_key = c.campaign_key
+    CROSS JOIN anchor a
+    LEFT JOIN active_flag af ON ol.member_key = af.member_key
+    WHERE ol.line_status = 'FULFILLED'
+  ),
+  sub_rows AS (
+    SELECT
+      'subscription' AS fact_family,
+      CAST(NULL AS BIGINT) AS order_line_key,
+      CAST(NULL AS BIGINT) AS order_key,
+      se.member_key,
+      CAST(NULL AS DOUBLE) AS net_recognized_amount,
+      CAST(NULL AS DOUBLE) AS gross_amount,
+      se.mrr_delta,
+      se.event_type,
+      d.fiscal_year,
+      d.fiscal_month,
+      d.fiscal_quarter,
+      d.calendar_date,
+      (d.fiscal_year = a.last_fm_year AND d.fiscal_month = a.last_fm_month) AS is_last_fiscal_month,
+      (d.fiscal_year = a.last_fq_year AND d.fiscal_quarter = a.last_fq) AS is_last_fiscal_quarter,
+      (d.fiscal_year = a.current_fy) AS is_current_fiscal_year,
+      (d.fiscal_year = a.current_fy AND d.fiscal_month <= a.current_fm) AS is_current_fytd,
+      (d.fiscal_year = a.current_fy AND d.fiscal_quarter = 1) AS is_current_fiscal_q1,
+      (d.fiscal_year = a.current_fy AND d.fiscal_quarter = 2) AS is_current_fiscal_q2,
+      (d.fiscal_year = 2025 AND d.fiscal_month = 6) AS is_june_spike_window,
+      (d.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30') AS is_retention_push_window,
+      g.region_name,
+      g.region_code,
+      CAST(NULL AS STRING) AS product_family,
+      CAST(NULL AS STRING) AS product_class,
+      CAST(NULL AS STRING) AS sku_code,
+      c.campaign_code,
+      c.campaign_name,
+      m.member_id,
+      m.display_handle,
+      m.member_tier,
+      COALESCE(af.is_active_member, FALSE) AS is_active_member
+    FROM ${catalog}.${schema}.fact_subscription_event se
+    JOIN ${catalog}.${schema}.dim_date d ON se.event_date_key = d.date_key
+    JOIN ${catalog}.${schema}.dim_member m ON se.member_key = m.member_key
+    JOIN ${catalog}.${schema}.dim_geo g ON m.home_geo_key = g.geo_key
+    JOIN ${catalog}.${schema}.dim_campaign c ON se.attribution_campaign_key = c.campaign_key
+    CROSS JOIN anchor a
+    LEFT JOIN active_flag af ON se.member_key = af.member_key
+  )
+  SELECT * FROM order_rows
+  UNION ALL
+  SELECT * FROM sub_rows
+
+comment: >
+  PulseForge conformed KPIs with fiscal flags and exact active-member logic
+  baked into a SQL-query source (UNION of order + subscription grains).
+  Owner: genie-tco-benchmark. MUST be tagged certified.
+
+fields:
+  - name: Fact Family
+    expr: fact_family
+    comment: order or subscription grain discriminator
+    synonyms: [grain, fact type]
+  - name: Fiscal Year
+    expr: fiscal_year
+    synonyms: [fy, fiscal_yr]
+  - name: Fiscal Month
+    expr: fiscal_month
+    synonyms: [fm, month]
+  - name: Fiscal Quarter
+    expr: fiscal_quarter
+    synonyms: [fq, quarter]
+  - name: Calendar Date
+    expr: calendar_date
+  - name: Is Last Fiscal Month
+    expr: is_last_fiscal_month
+    synonyms: [last month, previous fiscal month, last fiscal month]
+  - name: Is Last Fiscal Quarter
+    expr: is_last_fiscal_quarter
+    synonyms: [last quarter, previous fiscal quarter, last fiscal quarter]
+  - name: Is Current Fiscal Year
+    expr: is_current_fiscal_year
+    synonyms: [this fiscal year, current fy, current fiscal year]
+  - name: Is Current FYTD
+    expr: is_current_fytd
+    synonyms: [fytd, fiscal year to date, year to date, ytd]
+  - name: Is Current Fiscal Q1
+    expr: is_current_fiscal_q1
+    synonyms: [q1, fiscal q1]
+  - name: Is Current Fiscal Q2
+    expr: is_current_fiscal_q2
+    synonyms: [q2, fiscal q2]
+  - name: Is June Spike Window
+    expr: is_june_spike_window
+    synonyms: [june spike, june revenue, device launch window]
+  - name: Is Retention Push Window
+    expr: is_retention_push_window
+    synonyms: [retention window, churn campaign window, retain plus window]
+  - name: Event Type
+    expr: event_type
+    synonyms: [subscription event, lifecycle event]
+  - name: Region
+    expr: region_name
+    synonyms: [geo, geography, market]
+  - name: Region Code
+    expr: region_code
+    synonyms: [region_code, geo code]
+  - name: Product Family
+    expr: product_family
+    synonyms: [family, device family]
+  - name: Product Class
+    expr: product_class
+  - name: SKU Code
+    expr: sku_code
+    synonyms: [sku, product_code, product code]
+  - name: Campaign Code
+    expr: campaign_code
+    synonyms: [campaign, campaign_id]
+  - name: Campaign Name
+    expr: campaign_name
+  - name: Member ID
+    expr: member_id
+    synonyms: [customer_id, user_id, member]
+  - name: Member Handle
+    expr: display_handle
+  - name: Member Tier
+    expr: member_tier
+  - name: Is Active Member
+    expr: is_active_member
+    comment: Exact proprietary definition — ACTIVATE/RENEW in last 90d, no later CANCEL (current FY events)
+    synonyms: [active, active subscriber, currently active]
+
+measures:
+  - name: Recognized Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Official revenue from order-grain rows (subscription rows contribute NULL)
+    synonyms: [revenue, sales, recognized sales, net revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Hardware Revenue
+    expr: SUM(net_recognized_amount) FILTER (WHERE product_class IN ('DEVICE', 'ACCESSORY'))
+    synonyms: [hardware sales, device revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Ending MRR
+    expr: SUM(mrr_delta)
+    synonyms: [mrr, monthly recurring revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Cancellations
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE event_type = 'CANCEL')
+    synonyms: [cancels, churned members]
+  - name: Touched Members
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE fact_family = 'subscription')
+    synonyms: [members touched, cohort size]
+  - name: Churn Rate
+    expr: MEASURE(`Cancellations`) / NULLIF(MEASURE(`Touched Members`), 0)
+    synonyms: [churn, cancel rate, subscription churn]
+    format:
+      type: percentage
+  - name: Active Members
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE is_active_member)
+    comment: Exact active-member count using precomputed is_active_member flag
+    synonyms: [active members, active subscribers, active membership]
+  - name: Distinct Members
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE fact_family = 'order')
+    synonyms: [unique members, customers]
+  - name: Order Line Count
+    expr: COUNT(1) FILTER (WHERE fact_family = 'order')

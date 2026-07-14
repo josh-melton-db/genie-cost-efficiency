@@ -1,0 +1,10 @@
+databricks-sdk>=0.40.0
+databricks-connect>=15.4.0
+dbldatagen>=0.4.0
+Faker>=24.0.0
+mlflow[databricks]>=2.20.0
+pyyaml>=6.0
+pandas>=2.0.0
+requests>=2.31.0
+tenacity>=8.2.0
+python-dotenv>=1.0.0

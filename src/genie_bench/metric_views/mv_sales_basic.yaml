@@ -1,0 +1,65 @@
+version: 1.1
+source: ${catalog}.${schema}.fact_order_line
+comment: >
+  PulseForge basic sales KPIs. Grain is fulfilled order line.
+  Recognized revenue uses net_recognized_amount dated by recognition_date_key.
+  Owner: genie-tco-benchmark. Tag: certified.
+
+joins:
+  - name: dim_date
+    source: ${catalog}.${schema}.dim_date
+    on: source.recognition_date_key = dim_date.date_key
+  - name: dim_geo
+    source: ${catalog}.${schema}.dim_geo
+    on: source.geo_key = dim_geo.geo_key
+  - name: dim_product
+    source: ${catalog}.${schema}.dim_product
+    on: source.product_key = dim_product.product_key
+  - name: dim_member
+    source: ${catalog}.${schema}.dim_member
+    on: source.member_key = dim_member.member_key
+  - name: dim_campaign
+    source: ${catalog}.${schema}.dim_campaign
+    on: source.campaign_key = dim_campaign.campaign_key
+
+filter: line_status = 'FULFILLED'
+
+dimensions:
+  - name: Fiscal Year
+    expr: dim_date.fiscal_year
+    comment: Fiscal year from 4-4-5 calendar
+  - name: Fiscal Month
+    expr: dim_date.fiscal_month
+    comment: Fiscal month 1-12 (not Gregorian)
+  - name: Fiscal Quarter
+    expr: dim_date.fiscal_quarter
+    comment: Fiscal quarter 1-4
+  - name: Region
+    expr: dim_geo.region_name
+    comment: Sales geo region
+  - name: Region Code
+    expr: dim_geo.region_code
+    comment: NA / EMEA / APAC / LATAM
+  - name: Product Family
+    expr: dim_product.product_family
+    comment: Product family name
+  - name: Product Class
+    expr: dim_product.product_class
+    comment: DEVICE, ACCESSORY, or SUBSCRIPTION
+  - name: Campaign Code
+    expr: dim_campaign.campaign_code
+    comment: Marketing campaign code
+  - name: Member Tier
+    expr: dim_member.member_tier
+    comment: Member loyalty tier
+
+measures:
+  - name: Recognized Revenue
+    expr: SUM(net_recognized_amount)
+    comment: Net recognized revenue on fulfilled lines
+  - name: Order Line Count
+    expr: COUNT(1)
+    comment: Number of fulfilled order lines
+  - name: Distinct Members
+    expr: COUNT(DISTINCT member_key)
+    comment: Unique purchasing members

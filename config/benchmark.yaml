@@ -1,0 +1,151 @@
+# Genie TCO Benchmark — global settings
+# Override via env: CATALOG, SCHEMA, SCALE_PROFILE
+catalog: demos
+schema: geniebench
+scale_profile: dev  # dev | demo | enterprise
+
+# Seed for reproducible generation + planted signals
+seed: 20260712
+
+# Warehouse sizing (held constant across tiers so size is not a confound)
+warehouse:
+  size: Medium
+  serverless: true
+  auto_stop_mins: 10
+  enable_serverless_compute: true
+  # PREVIEW channel required for metric-view window measures + one-to-many joins
+  # (DBR 18.1+ features used by mv_pulseforge_sales_windowed / conformed_wide).
+  channel: PREVIEW
+  # Published serverless SQL DBU/hour by size (Azure/AWS docs). Used to prorate
+  # SQL $ as (execution_duration_sec / 3600) * dbus_per_hour * list_$/DBU so
+  # idle/auto-stop is excluded — startup amortizes away in production.
+  dbus_per_hour:
+    "2X-Small": 4
+    "X-Small": 6
+    Small: 12
+    Medium: 24
+    Large: 40
+    "X-Large": 80
+    "2X-Large": 144
+    "3X-Large": 272
+    "4X-Large": 528
+
+# Regen-until-correct policy (models real user behavior under bad configs)
+runner:
+  max_regenerations: 3
+  timeout_seconds: 180
+  fresh_conversation_per_question: true
+  settle_hours_before_cost: 6
+
+# Contamination guardrail gates
+contamination:
+  t0_max_first_pass_accuracy: 0.35
+  # Fully-curated reference tier (T4) — advisory during prove-out
+  full_tier: T4
+  full_tier_min_first_pass_accuracy: 0.70
+  # Back-compat alias
+  t4_min_first_pass_accuracy: 0.70
+  fail_if_contaminated: true
+  # Reporting gate: how many tiers should clear the quality floor for TCO ranking
+  quality_floor: 0.50
+  min_tiers_above_floor: 3
+
+# Tier groups for reporting / phased promotion
+tier_groups:
+  control: [T0]
+  baseline: [T1]
+  data_surface: [T2, T3, T23]
+  knowledge_store_metadata: [T6, T7, T12]
+  joins: [T8]
+  sql_expressions: [T9, T10]
+  prompt_matching: [T11]
+  instructions: [T13, T14]
+  example_sql_density: [T15, T16, T22]
+  trusted_assets: [T17, T18]
+  semantic_combo: [T19, T20, T21]
+  mv_centric: [T3, T19, T20, T21, T24, T25, T26]
+  full: [T4]
+  anti_pattern: [T5]
+  demo_subset: [T0, T1, T3, T4, T5, T16, T22, T24]
+  # Overnight TCO story: controls + single levers + density + full + anti + MV-centric
+  tco_story: [T0, T1, T3, T4, T5, T8, T9, T15, T16, T17, T22, T24, T25, T26]
+  full_sweep:
+    - T0
+    - T1
+    - T2
+    - T3
+    - T4
+    - T5
+    - T6
+    - T7
+    - T8
+    - T9
+    - T10
+    - T11
+    - T12
+    - T13
+    - T14
+    - T15
+    - T16
+    - T17
+    - T18
+    - T19
+    - T20
+    - T21
+    - T22
+    - T23
+    - T24
+    - T25
+    - T26
+
+secrets_scope: genie-tco-bench
+
+# Scale profiles — enterprise headline volumes at sf=1.0
+scale_profiles:
+  dev:
+    scale_factor: 0.0002
+    include_usage_events: true
+    usage_events_override: 100_000
+    description: Fast iteration prove-out (~50k orders, 100k usage events)
+  demo:
+    scale_factor: 0.05
+    include_usage_events: true
+    description: Resonant but affordable default
+  enterprise:
+    scale_factor: 1.0
+    include_usage_events: true
+    description: Headline enterprise volumes
+
+# Base volumes at scale_factor=1.0
+base_volumes:
+  members: 5_000_000
+  skus: 50_000
+  campaigns: 2_000
+  geos: 200
+  fiscal_years: 3
+  orders: 250_000_000
+  order_lines_per_order: 3.5
+  subscription_events: 300_000_000
+  usage_events: 5_000_000_000
+  returns_rate: 0.04
+
+# Planted signal windows (deterministic given seed)
+signals:
+  june_device_launch:
+    fiscal_year: 2025
+    month: 6
+    product_family: "PulseForge X1"
+    campaign_code: "PFX1-LAUNCH-2025"
+    revenue_multiplier: 2.8
+  churn_reduction_campaign:
+    campaign_code: "RETAIN-PLUS-2025Q2"
+    start_date: "2025-04-01"
+    end_date: "2025-06-30"
+    churn_rate_reduction: 0.35
+
+# Results tables
+results:
+  fact_benchmark_answer: fact_benchmark_answer
+  metric_tco: metric_tco
+  experiment_runs: experiment_runs
+  dim_tier: dim_tier

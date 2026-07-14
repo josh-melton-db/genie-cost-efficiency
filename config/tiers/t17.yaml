@@ -1,0 +1,83 @@
+tier: T17
+name: uc_sql_functions_only
+axis: trusted_assets
+lever: sql_functions
+intent: Unity Catalog SQL functions covering all 10 benchmark questions — trusted-assets philosophy
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: |
+  PulseForge trusted SQL functions only. Prefer UC table functions over ad-hoc SQL
+  when they match the question. Functions encode official fiscal + membership defs.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+  - "Recognized revenue for product code ZX-NOEXIST-999"
+  - "Sum of recognized sales for the previous fiscal calendar month"
+instructions:
+  text: |
+    Prefer trusted Unity Catalog table functions when they answer the question.
+    Call them as table functions in the FROM clause (SELECT * FROM fn_name()).
+    Do not rewrite official definitions with ad-hoc joins when a function matches.
+
+    Mapping:
+    - Last / previous fiscal month recognized revenue or sales →
+      SELECT * FROM ${catalog}.${schema}.fn_recognized_revenue_last_fiscal_month()
+    - Recognized revenue by geo / region last fiscal quarter →
+      SELECT * FROM ${catalog}.${schema}.fn_recognized_revenue_by_region_last_fq()
+    - Top members by hardware revenue FYTD →
+      SELECT * FROM ${catalog}.${schema}.fn_top_members_hardware_fytd()
+    - How is the business doing / KPI pack / MRR + churn →
+      SELECT * FROM ${catalog}.${schema}.fn_business_health_kpi_pack()
+    - Active EMEA members this fiscal year →
+      SELECT * FROM ${catalog}.${schema}.fn_active_members_emea_fy()
+    - Fiscal Q1 vs Q2 by product family →
+      SELECT * FROM ${catalog}.${schema}.fn_q1_vs_q2_revenue_by_family()
+    - Why did revenue spike in June / device launch →
+      SELECT * FROM ${catalog}.${schema}.fn_june_revenue_spike_attribution()
+    - Campaigns driving churn reduction / retention →
+      SELECT * FROM ${catalog}.${schema}.fn_campaigns_churn_reduction()
+    - Recognized revenue for a specific product / SKU code →
+      SELECT * FROM ${catalog}.${schema}.fn_recognized_revenue_for_sku('ZX-NOEXIST-999')
+  example_sqls: []
+  sql_functions:
+    - identifier: fn_recognized_revenue_last_fiscal_month
+      description: Official last-fiscal-month recognized revenue
+    - identifier: fn_recognized_revenue_by_region_last_fq
+      description: Recognized revenue by region last fiscal quarter
+    - identifier: fn_top_members_hardware_fytd
+      description: Top 10 members by hardware revenue FYTD
+    - identifier: fn_business_health_kpi_pack
+      description: Business health KPI pack (revenue + MRR + churn)
+    - identifier: fn_active_members_emea_fy
+      description: Active EMEA members this fiscal year
+    - identifier: fn_q1_vs_q2_revenue_by_family
+      description: Fiscal Q1 vs Q2 revenue by product family
+    - identifier: fn_june_revenue_spike_attribution
+      description: June 2025 revenue spike attribution
+    - identifier: fn_campaigns_churn_reduction
+      description: Campaigns ranked by churn rate in retention window
+    - identifier: fn_recognized_revenue_for_sku
+      description: Recognized revenue for a given SKU code
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Run python -m genie_bench.spaces.build_sql_functions before provisioning."

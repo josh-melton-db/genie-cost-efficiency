@@ -1,0 +1,111 @@
+version: 1.1
+# Wide pre-bucketed order-grain MV (GA-friendly stand-in for one-to-many spine).
+# Native cardinality: one_to_many is not yet available on this serverless SQL
+# warehouse (fails with UC/HMS mix error even on PREVIEW). Period/hardware
+# buckets live on v_wide_orders so Genie selects MEASURE(`Last Fiscal Month Revenue`)
+# instead of inventing fiscal filters.
+source: ${catalog}.${schema}.v_wide_orders
+comment: >
+  PulseForge wide pre-bucketed sales metrics. Fiscal/hardware windows are
+  precomputed amount columns — Genie uses dedicated measures rather than
+  calendar math. Pair with mv_pulseforge_membership for active/churn/MRR.
+  Owner: genie-tco-benchmark. MUST be tagged certified.
+
+fields:
+  - name: Fiscal Year
+    expr: fiscal_year
+    synonyms: [fy, fiscal_yr]
+  - name: Fiscal Month
+    expr: fiscal_month
+    synonyms: [fm, month]
+  - name: Fiscal Quarter
+    expr: fiscal_quarter
+    synonyms: [fq, quarter]
+  - name: Region
+    expr: order_region_name
+    synonyms: [geo, geography, market]
+  - name: Region Code
+    expr: order_region_code
+    synonyms: [region_code, geo code]
+  - name: Product Family
+    expr: product_family
+    synonyms: [family, device family]
+  - name: Product Class
+    expr: product_class
+  - name: SKU Code
+    expr: sku_code
+    synonyms: [sku, product_code]
+  - name: Campaign Code
+    expr: campaign_code
+    synonyms: [campaign, campaign_id]
+  - name: Campaign Name
+    expr: campaign_name
+  - name: Member Key
+    expr: member_key
+    comment: Internal member key for grouping
+  - name: Member ID
+    expr: member_id
+    synonyms: [customer_id, user_id, member]
+  - name: Member Handle
+    expr: display_handle
+    synonyms: [handle, display name]
+
+measures:
+  - name: Recognized Revenue
+    expr: SUM(net_recognized_amount)
+    synonyms: [revenue, sales, recognized sales, net revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Hardware Revenue
+    expr: SUM(hardware_amount)
+    synonyms: [hardware sales, device revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Hardware FYTD Revenue
+    expr: SUM(hardware_fytd_amount)
+    synonyms: [hardware fytd, device revenue ytd, lifetime hardware fytd]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Last Fiscal Month Revenue
+    expr: SUM(last_fm_amount)
+    synonyms: [last month revenue, previous fiscal month sales]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Last Fiscal Quarter Revenue
+    expr: SUM(last_fq_amount)
+    synonyms: [last quarter revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: FYTD Recognized Revenue
+    expr: SUM(fytd_amount)
+    synonyms: [fytd revenue, year to date sales]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Q1 Recognized Revenue
+    expr: SUM(q1_amount)
+    synonyms: [q1 revenue, fiscal q1 sales]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Q2 Recognized Revenue
+    expr: SUM(q2_amount)
+    synonyms: [q2 revenue, fiscal q2 sales]
+    format:
+      type: currency
+      currency_code: USD
+  - name: June Spike Revenue
+    expr: SUM(june_spike_amount)
+    synonyms: [june revenue, launch revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Order Line Count
+    expr: COUNT(1)
+  - name: Distinct Members
+    expr: COUNT(DISTINCT member_key)

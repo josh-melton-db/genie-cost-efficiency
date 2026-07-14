@@ -1,0 +1,140 @@
+resources:
+  jobs:
+    genie_tco_orchestrator:
+      name: "[${bundle.target}] genie-tco-orchestrator"
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: scale_profile
+          default: ${var.scale_profile}
+        - name: tiers
+          default: ${var.tiers}
+        - name: run_id
+          default: ""
+      tasks:
+        - task_key: bootstrap_uc
+          spark_python_task:
+            python_file: ../scripts/bootstrap_uc.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: generate_raw
+          depends_on:
+            - task_key: bootstrap_uc
+          spark_python_task:
+            python_file: ../src/genie_bench/data_gen/generate_raw.py
+          environment_key: genie_tco_env
+
+        - task_key: run_pipeline
+          depends_on:
+            - task_key: generate_raw
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.pulseforge_medallion.id}
+
+        - task_key: build_metric_views
+          depends_on:
+            - task_key: run_pipeline
+          spark_python_task:
+            python_file: ../src/genie_bench/metric_views/build_metric_views.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: build_sql_functions
+          depends_on:
+            - task_key: build_metric_views
+          spark_python_task:
+            python_file: ../src/genie_bench/spaces/build_sql_functions.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: provision_spaces
+          depends_on:
+            - task_key: build_sql_functions
+          spark_python_task:
+            python_file: ../src/genie_bench/spaces/provision_spaces.py
+            parameters:
+              - "--tiers-csv"
+              - "{{job.parameters.tiers}}"
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: run_benchmark
+          depends_on:
+            - task_key: provision_spaces
+          spark_python_task:
+            python_file: ../src/genie_bench/runner/run_benchmark.py
+            parameters:
+              - "--tiers-csv"
+              - "{{job.parameters.tiers}}"
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: evaluate
+          depends_on:
+            - task_key: run_benchmark
+          spark_python_task:
+            python_file: ../src/genie_bench/eval/evaluate.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: attribute_costs
+          depends_on:
+            - task_key: evaluate
+          spark_python_task:
+            python_file: ../src/genie_bench/cost/attribute_costs.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+        - task_key: refresh_metric_tco
+          depends_on:
+            - task_key: attribute_costs
+          spark_python_task:
+            python_file: ../src/genie_bench/report/build_results_tables.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: genie_tco_env
+
+      environments:
+        - environment_key: genie_tco_env
+          spec:
+            environment_version: "2"
+            dependencies:
+              - databricks-sdk
+              - dbldatagen
+              - Faker
+              - pyyaml
+              - pandas
+              - mlflow
+              - tenacity

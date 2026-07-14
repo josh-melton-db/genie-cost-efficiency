@@ -1,0 +1,151 @@
+version: 1.1
+source: ${catalog}.${schema}.fact_subscription_event
+comment: >
+  PulseForge membership / subscription metrics for Genie TCO benchmark.
+  Grain: subscription lifecycle event (ACTIVATE / RENEW / CANCEL).
+  Covers active members (approx), MRR, churn rate, and retention-campaign windows.
+  For exact active-member semantics (no later CANCEL after last ACTIVATE/RENEW),
+  prefer mv_pulseforge_conformed_sqlsrc or mv_pulseforge_conformed_wide.
+  Owner: genie-tco-benchmark. MUST be tagged certified.
+
+joins:
+  - name: dim_date
+    source: ${catalog}.${schema}.dim_date
+    on: source.event_date_key = dim_date.date_key
+    rely:
+      at_most_one_match: true
+  - name: dim_member
+    source: ${catalog}.${schema}.dim_member
+    on: source.member_key = dim_member.member_key
+    rely:
+      at_most_one_match: true
+    joins:
+      - name: dim_geo
+        source: ${catalog}.${schema}.dim_geo
+        on: dim_member.home_geo_key = dim_geo.geo_key
+        rely:
+          at_most_one_match: true
+  - name: dim_campaign
+    source: ${catalog}.${schema}.dim_campaign
+    on: source.attribution_campaign_key = dim_campaign.campaign_key
+    rely:
+      at_most_one_match: true
+  - name: anchor
+    source: ${catalog}.${schema}.v_fiscal_anchor
+    on: "1 = 1"
+    rely:
+      at_most_one_match: true
+
+fields:
+  - name: Fiscal Year
+    expr: dim_date.fiscal_year
+    comment: PulseForge 4-4-5 fiscal year of the subscription event
+    synonyms: [fy, fiscal_yr]
+  - name: Fiscal Month
+    expr: dim_date.fiscal_month
+    comment: Fiscal month 1-12 of the subscription event
+    synonyms: [fm, month]
+  - name: Fiscal Quarter
+    expr: dim_date.fiscal_quarter
+    comment: Fiscal quarter 1-4 of the subscription event
+    synonyms: [fq, quarter]
+  - name: Calendar Date
+    expr: dim_date.calendar_date
+    comment: Gregorian date of the subscription event
+  - name: Is Last Fiscal Month
+    expr: (dim_date.fiscal_year = anchor.last_fm_year AND dim_date.fiscal_month = anchor.last_fm_month)
+    synonyms: [last month, previous fiscal month, last fiscal month]
+  - name: Is Last Fiscal Quarter
+    expr: (dim_date.fiscal_year = anchor.last_fq_year AND dim_date.fiscal_quarter = anchor.last_fq)
+    synonyms: [last quarter, previous fiscal quarter, last fiscal quarter]
+  - name: Is Current Fiscal Year
+    expr: (dim_date.fiscal_year = anchor.current_fy)
+    synonyms: [this fiscal year, current fy, current fiscal year]
+  - name: Is Current FYTD
+    expr: (dim_date.fiscal_year = anchor.current_fy AND dim_date.fiscal_month <= anchor.current_fm)
+    synonyms: [fytd, fiscal year to date, year to date, ytd]
+  - name: Is Retention Push Window
+    expr: (dim_date.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30')
+    comment: Planted RETAIN-PLUS-2025Q2 evaluation window — ALWAYS filter this for churn-reduction / retention campaign questions
+    synonyms: [retention window, churn campaign window, retain plus window, churn reduction, drove churn, subscription churn]
+  - name: Event Type
+    expr: event_type
+    comment: ACTIVATE, RENEW, or CANCEL
+    synonyms: [subscription event, lifecycle event]
+  - name: Region
+    expr: dim_member.dim_geo.region_name
+    synonyms: [geo, geography, market]
+  - name: Region Code
+    expr: dim_member.dim_geo.region_code
+    synonyms: [region_code, geo code]
+  - name: Campaign Code
+    expr: dim_campaign.campaign_code
+    synonyms: [campaign, campaign_id]
+  - name: Campaign Name
+    expr: dim_campaign.campaign_name
+  - name: Member ID
+    expr: dim_member.member_id
+    synonyms: [customer_id, user_id, member]
+  - name: Member Handle
+    expr: dim_member.display_handle
+  - name: Member Tier
+    expr: dim_member.member_tier
+
+measures:
+  - name: New Activations
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE event_type = 'ACTIVATE')
+    comment: Distinct members with an ACTIVATE event
+    synonyms: [activations, new members, signups]
+  - name: Cancellations
+    expr: COUNT(DISTINCT member_key) FILTER (WHERE event_type = 'CANCEL')
+    comment: Distinct members with a CANCEL event
+    synonyms: [cancels, churned members, cancellations]
+  - name: Touched Members
+    expr: COUNT(DISTINCT member_key)
+    comment: Distinct members with any subscription event in the filtered set
+    synonyms: [members touched, cohort size]
+  - name: Churn Rate
+    expr: MEASURE(`Cancellations`) / NULLIF(MEASURE(`Touched Members`), 0)
+    comment: Cancelled members / touched members — lower is better for retention campaigns
+    synonyms: [churn, cancel rate, subscription churn]
+    format:
+      type: percentage
+  - name: Retention Window Cancellations
+    expr: >
+      COUNT(DISTINCT member_key) FILTER (
+        WHERE event_type = 'CANCEL'
+          AND dim_date.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30'
+      )
+    comment: Cancels inside the planted RETAIN-PLUS evaluation window
+  - name: Retention Window Touched
+    expr: >
+      COUNT(DISTINCT member_key) FILTER (
+        WHERE dim_date.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30'
+      )
+    comment: Members touched inside the planted RETAIN-PLUS evaluation window
+  - name: Retention Window Churn Rate
+    expr: MEASURE(`Retention Window Cancellations`) / NULLIF(MEASURE(`Retention Window Touched`), 0)
+    comment: Official churn-reduction ranking metric — use for "which campaigns drove churn reduction"
+    synonyms: [churn reduction, retention churn, campaign churn rate, drove churn]
+    format:
+      type: percentage
+  - name: Ending MRR
+    expr: SUM(mrr_delta)
+    comment: Net MRR movement (activate/renew positive, cancel negative)
+    synonyms: [mrr, monthly recurring revenue, subscription revenue]
+    format:
+      type: currency
+      currency_code: USD
+  - name: Active Members Approx
+    expr: >
+      COUNT(DISTINCT member_key) FILTER (
+        WHERE event_type IN ('ACTIVATE', 'RENEW')
+          AND dim_date.calendar_date >= date_sub(current_date(), 90)
+      )
+    comment: >
+      Approximation of active members (ACTIVATE/RENEW in last 90 days).
+      Does not exclude later CANCEL — use conformed MVs for exact definition.
+    synonyms: [active members, active subscribers, active membership]
+  - name: Subscription Event Count
+    expr: COUNT(1)
+    comment: Raw subscription event row count

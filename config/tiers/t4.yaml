@@ -1,0 +1,198 @@
+tier: T4
+name: fully_curated
+axis: full
+lever: all_levers
+intent: Docs gold standard — MV + examples + joins + snippets + functions + prompt matching + benchmarks
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_rich
+  - ${catalog}.${schema}.mv_pulseforge_membership
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_subscription_event
+description: |
+  Fully curated PulseForge Genie Agent. Use metric view measures for KPIs.
+  Trusted SQL examples and UC functions encode official definitions.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+  - "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+  - "How is the business doing?"
+  - "How many active members in EMEA this fiscal year?"
+  - "Fiscal Q1 vs Q2 recognized revenue by product family"
+  - "Why did revenue spike in June?"
+  - "Which campaigns drove subscription churn reduction?"
+instructions:
+  text: |
+    Persona: Finance + growth analyst for PulseForge connected fitness.
+    Scope: recognized commerce revenue, subscriptions/MRR/churn, campaigns.
+    Do NOT use order_ts or ship_ts for revenue unless asked.
+    Do NOT scan fact_usage_event for revenue questions.
+    Ambiguous "revenue" / "sales" / "how is the business doing" → use recognized revenue + MRR + churn pack.
+    Fiscal periods always come from dim_date 4-4-5 calendar.
+    Trusted UC table functions (prefer these when they match the ask):
+    - Last fiscal month recognized revenue → SELECT * FROM demos.geniebench.fn_recognized_revenue_last_fiscal_month()
+    - Active EMEA members this fiscal year → SELECT * FROM demos.geniebench.fn_active_members_emea_fy()
+    Otherwise follow the example SQL patterns.
+  example_sqls:
+    - title: Total recognized revenue last fiscal month
+      usage: Use for any ask about last month revenue/sales/recognized sales
+      sql_file: config/golden/q01.sql
+    - title: Revenue by region last fiscal quarter
+      usage: Region / geo breakouts of recognized revenue
+      sql_file: config/golden/q02.sql
+    - title: Top members by hardware revenue FYTD
+      usage: Member rankings / top customers by hardware spend
+      sql_file: config/golden/q03.sql
+    - title: Business health KPI pack
+      usage: Ambiguous business-health questions
+      sql_file: config/golden/q04.sql
+    - title: Active EMEA members this fiscal year
+      usage: Active member counts with geo filters
+      sql_file: config/golden/q05.sql
+    - title: Q1 vs Q2 revenue by product family
+      usage: Period comparisons by product family
+      sql_file: config/golden/q06.sql
+    - title: June revenue spike attribution
+      usage: Why did revenue spike in June / device launch analysis
+      sql_file: config/golden/q07.sql
+    - title: Campaigns driving churn reduction
+      usage: Campaign effectiveness on subscription churn
+      sql_file: config/golden/q08.sql
+    - title: Recognized revenue for a specific region
+      usage: Parameterized trusted asset for region-filtered revenue
+      sql: |
+        SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue
+        FROM ${catalog}.${schema}.fact_order_line ol
+        JOIN ${catalog}.${schema}.dim_geo g ON ol.geo_key = g.geo_key
+        WHERE ol.line_status = 'FULFILLED'
+          AND g.region_code = :region_code
+      parameters:
+        - name: region_code
+          type_hint: STRING
+          description: Region code such as EMEA
+          default: EMEA
+  sql_functions:
+    - identifier: fn_recognized_revenue_last_fiscal_month
+      description: Official last-fiscal-month recognized revenue
+    - identifier: fn_active_members_emea_fy
+      description: Active EMEA members this fiscal year
+  join_specs:
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_date
+      right_alias: d
+      sql: "`ol`.`recognition_date_key` = `d`.`date_key`"
+      relationship_type: many_to_one
+      instruction: Use for recognition-dated revenue
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_geo
+      right_alias: g
+      sql: "`ol`.`geo_key` = `g`.`geo_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_product
+      right_alias: p
+      sql: "`ol`.`product_key` = `p`.`product_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_member
+      right_alias: m
+      sql: "`ol`.`member_key` = `m`.`member_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_order_line
+      left_alias: ol
+      right: ${catalog}.${schema}.dim_campaign
+      right_alias: c
+      sql: "`ol`.`campaign_key` = `c`.`campaign_key`"
+      relationship_type: many_to_one
+    - left: ${catalog}.${schema}.fact_subscription_event
+      left_alias: se
+      right: ${catalog}.${schema}.dim_campaign
+      right_alias: c
+      sql: "`se`.`attribution_campaign_key` = `c`.`campaign_key`"
+      relationship_type: many_to_one
+  sql_snippets:
+    measures:
+      - name: Recognized Revenue
+        alias: recognized_revenue
+        sql: "SUM(ol.net_recognized_amount)"
+        synonyms: [revenue, sales, recognized_sales]
+        usage: Default revenue measure; fulfilled lines only
+      - name: Ending MRR
+        alias: ending_mrr
+        sql: "SUM(se.mrr_delta)"
+        synonyms: [mrr, subscription revenue]
+        usage: Subscription MRR movement
+    filters:
+      - name: Fulfilled lines only
+        sql: "ol.line_status = 'FULFILLED'"
+        synonyms: [fulfilled, recognized lines]
+        usage: Always apply for revenue
+      - name: EMEA region
+        sql: "g.region_code = 'EMEA'"
+        synonyms: [emea, europe middle east africa]
+        usage: EMEA geo filter
+    fields:
+      - name: Fiscal Year
+        alias: fiscal_year
+        sql: "d.fiscal_year"
+        synonyms: [fy, fiscal_yr]
+      - name: Fiscal Month
+        alias: fiscal_month
+        sql: "d.fiscal_month"
+        synonyms: [fm, month]
+      - name: Product Family
+        alias: product_family
+        sql: "p.product_family"
+        synonyms: [family, device family]
+column_configs:
+  dim_geo:
+    - column_name: region_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: country_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_product:
+    - column_name: product_family
+      enable_format_assistance: true
+      enable_entity_matching: true
+    - column_name: product_class
+      enable_format_assistance: true
+      enable_entity_matching: true
+  dim_campaign:
+    - column_name: campaign_code
+      enable_format_assistance: true
+      enable_entity_matching: true
+  fact_order_line:
+    - column_name: line_status
+      enable_format_assistance: true
+      enable_entity_matching: true
+benchmarks:
+  - question: "What was total recognized revenue last fiscal month?"
+    sql_file: config/golden/q01.sql
+  - question: "Recognized revenue by geo region for last fiscal quarter"
+    sql_file: config/golden/q02.sql
+  - question: "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+    sql_file: config/golden/q03.sql
+  - question: "How is the business doing?"
+    sql_file: config/golden/q04.sql
+  - question: "How many active members in EMEA this fiscal year?"
+    sql_file: config/golden/q05.sql
+  - question: "Fiscal Q1 vs Q2 recognized revenue by product family"
+    sql_file: config/golden/q06.sql
+  - question: "Why did revenue spike in June?"
+    sql_file: config/golden/q07.sql
+  - question: "Which campaigns drove subscription churn reduction?"
+    sql_file: config/golden/q08.sql
+  - question: "Recognized revenue for product code ZX-NOEXIST-999"
+    sql_file: config/golden/q09.sql
+  - question: "Sum of recognized sales for the previous fiscal calendar month"
+    sql_file: config/golden/q01.sql
+manual_steps: []

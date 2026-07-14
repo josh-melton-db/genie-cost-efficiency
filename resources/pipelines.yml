@@ -1,0 +1,19 @@
+resources:
+  pipelines:
+    pulseforge_medallion:
+      name: "[${bundle.target}] pulseforge-medallion"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      channel: CURRENT
+      libraries:
+        - file:
+            path: ../src/genie_bench/pipeline/transformations.py
+      configuration:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        bundle.var.catalog: ${var.catalog}
+        bundle.var.schema: ${var.schema}
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

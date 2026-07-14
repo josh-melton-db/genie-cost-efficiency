@@ -1,0 +1,668 @@
+{
+  "source": "/api/2.0/genie/spaces/01f17e5fd5821347a8916cc3a53fc353?include_serialized_space=true",
+  "space_id": "01f17e5fd5821347a8916cc3a53fc353",
+  "envelope": {
+    "space_id": "01f17e5fd5821347a8916cc3a53fc353",
+    "title": "Genie TCO T4 \u2014 fully_curated no-join_specs",
+    "description": "Fully curated PulseForge Genie Agent. Use metric view measures for KPIs.\nTrusted SQL examples encode official definitions for revenue, active members,\nchurn, and planted-signal analyses (June PulseForge X1 launch; RETAIN-PLUS).\n",
+    "warehouse_id": "d1bd0c4889bdd7c0",
+    "parent_path": "/Users/josh.melton@databricks.com",
+    "etag": "47e029c7a30d62a3ff72f7f662b425338fc792d2425e67c7983d2407bd62be44"
+  },
+  "serialized_space": {
+    "version": 2,
+    "config": {
+      "sample_questions": [
+        {
+          "id": "00000000000000000000000000000101",
+          "question": [
+            "What was total recognized revenue last fiscal month?"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000102",
+          "question": [
+            "Recognized revenue by geo region for last fiscal quarter"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000103",
+          "question": [
+            "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000104",
+          "question": [
+            "How is the business doing?"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000105",
+          "question": [
+            "How many active members in EMEA this fiscal year?"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000106",
+          "question": [
+            "Fiscal Q1 vs Q2 recognized revenue by product family"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000107",
+          "question": [
+            "Why did revenue spike in June?"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000108",
+          "question": [
+            "Which campaigns drove subscription churn reduction?"
+          ]
+        }
+      ]
+    },
+    "data_sources": {
+      "tables": [
+        {
+          "identifier": "demos.geniebench.dim_campaign"
+        },
+        {
+          "identifier": "demos.geniebench.dim_geo"
+        },
+        {
+          "identifier": "demos.geniebench.dim_member"
+        },
+        {
+          "identifier": "demos.geniebench.dim_product"
+        },
+        {
+          "identifier": "demos.geniebench.mv_pulseforge_sales_rich"
+        }
+      ]
+    },
+    "instructions": {
+      "text_instructions": [
+        {
+          "id": "00000000000000000000000000000200",
+          "content": [
+            "Persona: Finance + growth analyst for PulseForge connected fitness.\n",
+            "Scope: recognized commerce revenue, subscriptions/MRR/churn, campaigns.\n",
+            "Do NOT use order_ts or ship_ts for revenue unless asked.\n",
+            "Do NOT scan fact_usage_event for revenue questions.\n",
+            "Ambiguous \"revenue\" / \"sales\" / \"how is the business doing\" \u2192 use recognized revenue + MRR + churn pack.\n",
+            "Fiscal periods always come from dim_date 4-4-5 calendar.\n"
+          ]
+        }
+      ],
+      "example_question_sqls": [
+        {
+          "id": "00000000000000000000000000000211",
+          "question": [
+            "Total recognized revenue last fiscal month"
+          ],
+          "sql": [
+            "-- Q1 / Q10: Total recognized revenue last fiscal month\n",
+            "-- Ambiguous without curation: order_ts vs ship_ts vs recognition_ts; gross vs net-of-returns\n",
+            "WITH last_fm AS (\n",
+            "  SELECT fiscal_year, fiscal_month\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = add_months(current_date(), -1)\n",
+            "  LIMIT 1\n",
+            ")\n",
+            "SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS total_recognized_revenue\n",
+            "FROM demos.geniebench.fact_order_line ol\n",
+            "JOIN demos.geniebench.dim_date d\n",
+            "  ON ol.recognition_date_key = d.date_key\n",
+            "JOIN last_fm lf\n",
+            "  ON d.fiscal_year = lf.fiscal_year\n",
+            " AND d.fiscal_month = lf.fiscal_month\n",
+            "WHERE ol.line_status = 'FULFILLED';\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000212",
+          "question": [
+            "Revenue by region last fiscal quarter"
+          ],
+          "sql": [
+            "-- Q2: Recognized revenue by geo region for last fiscal quarter\n",
+            "WITH last_fq AS (\n",
+            "  SELECT fiscal_year, fiscal_quarter\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = add_months(current_date(), -3)\n",
+            "  LIMIT 1\n",
+            ")\n",
+            "SELECT\n",
+            "  g.region_name,\n",
+            "  ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue\n",
+            "FROM demos.geniebench.fact_order_line ol\n",
+            "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+            "JOIN demos.geniebench.dim_geo g ON ol.geo_key = g.geo_key\n",
+            "JOIN last_fq fq\n",
+            "  ON d.fiscal_year = fq.fiscal_year\n",
+            " AND d.fiscal_quarter = fq.fiscal_quarter\n",
+            "WHERE ol.line_status = 'FULFILLED'\n",
+            "GROUP BY g.region_name\n",
+            "ORDER BY recognized_revenue DESC;\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000213",
+          "question": [
+            "Top members by hardware revenue FYTD"
+          ],
+          "sql": [
+            "-- Q3: Top 10 members by lifetime recognized hardware revenue fiscal YTD\n",
+            "WITH fytd AS (\n",
+            "  SELECT fiscal_year\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = current_date()\n",
+            "  LIMIT 1\n",
+            ")\n",
+            "SELECT\n",
+            "  m.member_id,\n",
+            "  m.display_handle,\n",
+            "  ROUND(SUM(ol.net_recognized_amount), 2) AS hardware_revenue_fytd\n",
+            "FROM demos.geniebench.fact_order_line ol\n",
+            "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+            "JOIN demos.geniebench.dim_member m ON ol.member_key = m.member_key\n",
+            "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+            "JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+            "WHERE ol.line_status = 'FULFILLED'\n",
+            "  AND p.product_class IN ('DEVICE', 'ACCESSORY')\n",
+            "GROUP BY m.member_id, m.display_handle\n",
+            "ORDER BY hardware_revenue_fytd DESC\n",
+            "LIMIT 10;\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000214",
+          "question": [
+            "Business health KPI pack"
+          ],
+          "sql": [
+            "-- Q4: \"How is the business doing?\" \u2014 curated KPI pack\n",
+            "-- LLM-judge scores whether Genie returns this shape or asks clarifying questions\n",
+            "WITH fytd AS (\n",
+            "  SELECT fiscal_year\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = current_date()\n",
+            "  LIMIT 1\n",
+            "),\n",
+            "rev AS (\n",
+            "  SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue_fytd\n",
+            "  FROM demos.geniebench.fact_order_line ol\n",
+            "  JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+            "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+            "  WHERE ol.line_status = 'FULFILLED'\n",
+            "),\n",
+            "mrr AS (\n",
+            "  SELECT ROUND(SUM(CASE WHEN se.event_type IN ('ACTIVATE', 'RENEW') THEN se.mrr_delta\n",
+            "                        WHEN se.event_type = 'CANCEL' THEN se.mrr_delta ELSE 0 END), 2) AS ending_mrr\n",
+            "  FROM demos.geniebench.fact_subscription_event se\n",
+            "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+            "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+            "),\n",
+            "churn AS (\n",
+            "  SELECT\n",
+            "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END)\n",
+            "      / NULLIF(COUNT(DISTINCT se.member_key), 0) AS churn_rate_fytd\n",
+            "  FROM demos.geniebench.fact_subscription_event se\n",
+            "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+            "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+            ")\n",
+            "SELECT rev.recognized_revenue_fytd, mrr.ending_mrr, ROUND(churn.churn_rate_fytd, 4) AS churn_rate_fytd\n",
+            "FROM rev CROSS JOIN mrr CROSS JOIN churn;\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000215",
+          "question": [
+            "Active EMEA members this fiscal year"
+          ],
+          "sql": [
+            "-- Q5: Active members in EMEA this fiscal year\n",
+            "-- Active = proprietary: has ACTIVATE/RENEW in last 90 days AND no CANCEL after last activate\n",
+            "WITH fy AS (\n",
+            "  SELECT fiscal_year\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = current_date()\n",
+            "  LIMIT 1\n",
+            "),\n",
+            "last_events AS (\n",
+            "  SELECT\n",
+            "    se.member_key,\n",
+            "    MAX(CASE WHEN se.event_type IN ('ACTIVATE', 'RENEW') THEN d.calendar_date END) AS last_active_dt,\n",
+            "    MAX(CASE WHEN se.event_type = 'CANCEL' THEN d.calendar_date END) AS last_cancel_dt\n",
+            "  FROM demos.geniebench.fact_subscription_event se\n",
+            "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+            "  JOIN fy ON d.fiscal_year = fy.fiscal_year\n",
+            "  GROUP BY se.member_key\n",
+            ")\n",
+            "SELECT COUNT(*) AS active_members_emea\n",
+            "FROM last_events le\n",
+            "JOIN demos.geniebench.dim_member m ON le.member_key = m.member_key\n",
+            "JOIN demos.geniebench.dim_geo g ON m.home_geo_key = g.geo_key\n",
+            "WHERE g.region_code = 'EMEA'\n",
+            "  AND le.last_active_dt >= date_sub(current_date(), 90)\n",
+            "  AND (le.last_cancel_dt IS NULL OR le.last_cancel_dt < le.last_active_dt);\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000216",
+          "question": [
+            "Q1 vs Q2 revenue by product family"
+          ],
+          "sql": [
+            "-- Q6: Fiscal Q1 vs Q2 recognized revenue by product family\n",
+            "WITH fy AS (\n",
+            "  SELECT fiscal_year\n",
+            "  FROM demos.geniebench.dim_date\n",
+            "  WHERE calendar_date = current_date()\n",
+            "  LIMIT 1\n",
+            ")\n",
+            "SELECT\n",
+            "  p.product_family,\n",
+            "  ROUND(SUM(CASE WHEN d.fiscal_quarter = 1 THEN ol.net_recognized_amount ELSE 0 END), 2) AS q1_revenue,\n",
+            "  ROUND(SUM(CASE WHEN d.fiscal_quarter = 2 THEN ol.net_recognized_amount ELSE 0 END), 2) AS q2_revenue\n",
+            "FROM demos.geniebench.fact_order_line ol\n",
+            "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+            "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+            "JOIN fy ON d.fiscal_year = fy.fiscal_year\n",
+            "WHERE ol.line_status = 'FULFILLED'\n",
+            "  AND d.fiscal_quarter IN (1, 2)\n",
+            "GROUP BY p.product_family\n",
+            "ORDER BY p.product_family;\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000217",
+          "question": [
+            "June revenue spike attribution"
+          ],
+          "sql": [
+            "-- Q7: Why did revenue spike in June? \u2014 attribute to PulseForge X1 launch\n",
+            "-- LLM-judge checks for product family + campaign attribution\n",
+            "SELECT\n",
+            "  p.product_family,\n",
+            "  p.sku_code,\n",
+            "  c.campaign_code,\n",
+            "  c.campaign_name,\n",
+            "  d.fiscal_year,\n",
+            "  d.fiscal_month,\n",
+            "  ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue,\n",
+            "  COUNT(DISTINCT ol.order_key) AS order_count\n",
+            "FROM demos.geniebench.fact_order_line ol\n",
+            "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+            "JOIN demos.geniebench.dim_campaign c ON ol.campaign_key = c.campaign_key\n",
+            "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+            "WHERE d.fiscal_month = 6\n",
+            "  AND d.fiscal_year = 2025\n",
+            "  AND ol.line_status = 'FULFILLED'\n",
+            "GROUP BY ALL\n",
+            "ORDER BY recognized_revenue DESC\n",
+            "LIMIT 20;\n"
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000218",
+          "question": [
+            "Campaigns driving churn reduction"
+          ],
+          "sql": [
+            "-- Q8: Which campaigns drove subscription churn reduction?\n",
+            "WITH cohort AS (\n",
+            "  SELECT\n",
+            "    c.campaign_code,\n",
+            "    c.campaign_name,\n",
+            "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END) AS cancels,\n",
+            "    COUNT(DISTINCT se.member_key) AS touched_members,\n",
+            "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END)\n",
+            "      / NULLIF(COUNT(DISTINCT se.member_key), 0) AS churn_rate\n",
+            "  FROM demos.geniebench.fact_subscription_event se\n",
+            "  JOIN demos.geniebench.dim_campaign c ON se.attribution_campaign_key = c.campaign_key\n",
+            "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+            "  WHERE d.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30'\n",
+            "  GROUP BY c.campaign_code, c.campaign_name\n",
+            ")\n",
+            "SELECT *\n",
+            "FROM cohort\n",
+            "ORDER BY churn_rate ASC\n",
+            "LIMIT 10;\n"
+          ]
+        }
+      ]
+    },
+    "benchmarks": {
+      "questions": [
+        {
+          "id": "0000000000000000000000000000060a",
+          "question": [
+            "Sum of recognized sales for the previous fiscal calendar month"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q1 / Q10: Total recognized revenue last fiscal month\n",
+                "-- Ambiguous without curation: order_ts vs ship_ts vs recognition_ts; gross vs net-of-returns\n",
+                "WITH last_fm AS (\n",
+                "  SELECT fiscal_year, fiscal_month\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = add_months(current_date(), -1)\n",
+                "  LIMIT 1\n",
+                ")\n",
+                "SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS total_recognized_revenue\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_date d\n",
+                "  ON ol.recognition_date_key = d.date_key\n",
+                "JOIN last_fm lf\n",
+                "  ON d.fiscal_year = lf.fiscal_year\n",
+                " AND d.fiscal_month = lf.fiscal_month\n",
+                "WHERE ol.line_status = 'FULFILLED';\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000609",
+          "question": [
+            "Recognized revenue for product code ZX-NOEXIST-999"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q9: Edge \u2014 nonexistent product code should yield empty/zero\n",
+                "SELECT\n",
+                "  ROUND(COALESCE(SUM(ol.net_recognized_amount), 0), 2) AS recognized_revenue\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+                "WHERE p.sku_code = 'ZX-NOEXIST-999'\n",
+                "  AND ol.line_status = 'FULFILLED';\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000608",
+          "question": [
+            "Which campaigns drove subscription churn reduction?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q8: Which campaigns drove subscription churn reduction?\n",
+                "WITH cohort AS (\n",
+                "  SELECT\n",
+                "    c.campaign_code,\n",
+                "    c.campaign_name,\n",
+                "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END) AS cancels,\n",
+                "    COUNT(DISTINCT se.member_key) AS touched_members,\n",
+                "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END)\n",
+                "      / NULLIF(COUNT(DISTINCT se.member_key), 0) AS churn_rate\n",
+                "  FROM demos.geniebench.fact_subscription_event se\n",
+                "  JOIN demos.geniebench.dim_campaign c ON se.attribution_campaign_key = c.campaign_key\n",
+                "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+                "  WHERE d.calendar_date BETWEEN DATE '2025-04-01' AND DATE '2025-06-30'\n",
+                "  GROUP BY c.campaign_code, c.campaign_name\n",
+                ")\n",
+                "SELECT *\n",
+                "FROM cohort\n",
+                "ORDER BY churn_rate ASC\n",
+                "LIMIT 10;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000607",
+          "question": [
+            "Why did revenue spike in June?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q7: Why did revenue spike in June? \u2014 attribute to PulseForge X1 launch\n",
+                "-- LLM-judge checks for product family + campaign attribution\n",
+                "SELECT\n",
+                "  p.product_family,\n",
+                "  p.sku_code,\n",
+                "  c.campaign_code,\n",
+                "  c.campaign_name,\n",
+                "  d.fiscal_year,\n",
+                "  d.fiscal_month,\n",
+                "  ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue,\n",
+                "  COUNT(DISTINCT ol.order_key) AS order_count\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+                "JOIN demos.geniebench.dim_campaign c ON ol.campaign_key = c.campaign_key\n",
+                "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+                "WHERE d.fiscal_month = 6\n",
+                "  AND d.fiscal_year = 2025\n",
+                "  AND ol.line_status = 'FULFILLED'\n",
+                "GROUP BY ALL\n",
+                "ORDER BY recognized_revenue DESC\n",
+                "LIMIT 20;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000606",
+          "question": [
+            "Fiscal Q1 vs Q2 recognized revenue by product family"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q6: Fiscal Q1 vs Q2 recognized revenue by product family\n",
+                "WITH fy AS (\n",
+                "  SELECT fiscal_year\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = current_date()\n",
+                "  LIMIT 1\n",
+                ")\n",
+                "SELECT\n",
+                "  p.product_family,\n",
+                "  ROUND(SUM(CASE WHEN d.fiscal_quarter = 1 THEN ol.net_recognized_amount ELSE 0 END), 2) AS q1_revenue,\n",
+                "  ROUND(SUM(CASE WHEN d.fiscal_quarter = 2 THEN ol.net_recognized_amount ELSE 0 END), 2) AS q2_revenue\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+                "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+                "JOIN fy ON d.fiscal_year = fy.fiscal_year\n",
+                "WHERE ol.line_status = 'FULFILLED'\n",
+                "  AND d.fiscal_quarter IN (1, 2)\n",
+                "GROUP BY p.product_family\n",
+                "ORDER BY p.product_family;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000605",
+          "question": [
+            "How many active members in EMEA this fiscal year?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q5: Active members in EMEA this fiscal year\n",
+                "-- Active = proprietary: has ACTIVATE/RENEW in last 90 days AND no CANCEL after last activate\n",
+                "WITH fy AS (\n",
+                "  SELECT fiscal_year\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = current_date()\n",
+                "  LIMIT 1\n",
+                "),\n",
+                "last_events AS (\n",
+                "  SELECT\n",
+                "    se.member_key,\n",
+                "    MAX(CASE WHEN se.event_type IN ('ACTIVATE', 'RENEW') THEN d.calendar_date END) AS last_active_dt,\n",
+                "    MAX(CASE WHEN se.event_type = 'CANCEL' THEN d.calendar_date END) AS last_cancel_dt\n",
+                "  FROM demos.geniebench.fact_subscription_event se\n",
+                "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+                "  JOIN fy ON d.fiscal_year = fy.fiscal_year\n",
+                "  GROUP BY se.member_key\n",
+                ")\n",
+                "SELECT COUNT(*) AS active_members_emea\n",
+                "FROM last_events le\n",
+                "JOIN demos.geniebench.dim_member m ON le.member_key = m.member_key\n",
+                "JOIN demos.geniebench.dim_geo g ON m.home_geo_key = g.geo_key\n",
+                "WHERE g.region_code = 'EMEA'\n",
+                "  AND le.last_active_dt >= date_sub(current_date(), 90)\n",
+                "  AND (le.last_cancel_dt IS NULL OR le.last_cancel_dt < le.last_active_dt);\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000604",
+          "question": [
+            "How is the business doing?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q4: \"How is the business doing?\" \u2014 curated KPI pack\n",
+                "-- LLM-judge scores whether Genie returns this shape or asks clarifying questions\n",
+                "WITH fytd AS (\n",
+                "  SELECT fiscal_year\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = current_date()\n",
+                "  LIMIT 1\n",
+                "),\n",
+                "rev AS (\n",
+                "  SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue_fytd\n",
+                "  FROM demos.geniebench.fact_order_line ol\n",
+                "  JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+                "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+                "  WHERE ol.line_status = 'FULFILLED'\n",
+                "),\n",
+                "mrr AS (\n",
+                "  SELECT ROUND(SUM(CASE WHEN se.event_type IN ('ACTIVATE', 'RENEW') THEN se.mrr_delta\n",
+                "                        WHEN se.event_type = 'CANCEL' THEN se.mrr_delta ELSE 0 END), 2) AS ending_mrr\n",
+                "  FROM demos.geniebench.fact_subscription_event se\n",
+                "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+                "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+                "),\n",
+                "churn AS (\n",
+                "  SELECT\n",
+                "    COUNT(DISTINCT CASE WHEN se.event_type = 'CANCEL' THEN se.member_key END)\n",
+                "      / NULLIF(COUNT(DISTINCT se.member_key), 0) AS churn_rate_fytd\n",
+                "  FROM demos.geniebench.fact_subscription_event se\n",
+                "  JOIN demos.geniebench.dim_date d ON se.event_date_key = d.date_key\n",
+                "  JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+                ")\n",
+                "SELECT rev.recognized_revenue_fytd, mrr.ending_mrr, ROUND(churn.churn_rate_fytd, 4) AS churn_rate_fytd\n",
+                "FROM rev CROSS JOIN mrr CROSS JOIN churn;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000603",
+          "question": [
+            "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q3: Top 10 members by lifetime recognized hardware revenue fiscal YTD\n",
+                "WITH fytd AS (\n",
+                "  SELECT fiscal_year\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = current_date()\n",
+                "  LIMIT 1\n",
+                ")\n",
+                "SELECT\n",
+                "  m.member_id,\n",
+                "  m.display_handle,\n",
+                "  ROUND(SUM(ol.net_recognized_amount), 2) AS hardware_revenue_fytd\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_product p ON ol.product_key = p.product_key\n",
+                "JOIN demos.geniebench.dim_member m ON ol.member_key = m.member_key\n",
+                "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+                "JOIN fytd ON d.fiscal_year = fytd.fiscal_year\n",
+                "WHERE ol.line_status = 'FULFILLED'\n",
+                "  AND p.product_class IN ('DEVICE', 'ACCESSORY')\n",
+                "GROUP BY m.member_id, m.display_handle\n",
+                "ORDER BY hardware_revenue_fytd DESC\n",
+                "LIMIT 10;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000602",
+          "question": [
+            "Recognized revenue by geo region for last fiscal quarter"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q2: Recognized revenue by geo region for last fiscal quarter\n",
+                "WITH last_fq AS (\n",
+                "  SELECT fiscal_year, fiscal_quarter\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = add_months(current_date(), -3)\n",
+                "  LIMIT 1\n",
+                ")\n",
+                "SELECT\n",
+                "  g.region_name,\n",
+                "  ROUND(SUM(ol.net_recognized_amount), 2) AS recognized_revenue\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_date d ON ol.recognition_date_key = d.date_key\n",
+                "JOIN demos.geniebench.dim_geo g ON ol.geo_key = g.geo_key\n",
+                "JOIN last_fq fq\n",
+                "  ON d.fiscal_year = fq.fiscal_year\n",
+                " AND d.fiscal_quarter = fq.fiscal_quarter\n",
+                "WHERE ol.line_status = 'FULFILLED'\n",
+                "GROUP BY g.region_name\n",
+                "ORDER BY recognized_revenue DESC;\n"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "00000000000000000000000000000601",
+          "question": [
+            "What was total recognized revenue last fiscal month?"
+          ],
+          "answer": [
+            {
+              "format": "SQL",
+              "content": [
+                "-- Q1 / Q10: Total recognized revenue last fiscal month\n",
+                "-- Ambiguous without curation: order_ts vs ship_ts vs recognition_ts; gross vs net-of-returns\n",
+                "WITH last_fm AS (\n",
+                "  SELECT fiscal_year, fiscal_month\n",
+                "  FROM demos.geniebench.dim_date\n",
+                "  WHERE calendar_date = add_months(current_date(), -1)\n",
+                "  LIMIT 1\n",
+                ")\n",
+                "SELECT ROUND(SUM(ol.net_recognized_amount), 2) AS total_recognized_revenue\n",
+                "FROM demos.geniebench.fact_order_line ol\n",
+                "JOIN demos.geniebench.dim_date d\n",
+                "  ON ol.recognition_date_key = d.date_key\n",
+                "JOIN last_fm lf\n",
+                "  ON d.fiscal_year = lf.fiscal_year\n",
+                " AND d.fiscal_month = lf.fiscal_month\n",
+                "WHERE ol.line_status = 'FULFILLED';\n"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

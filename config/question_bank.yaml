@@ -1,0 +1,72 @@
+# Question bank — same prompts for every curation tier.
+# Golden answers are COMPUTED by executing golden SQL on generated data
+# (never hardcoded scalars), so they hold at any scale_factor.
+
+questions:
+  - id: Q1
+    class: simple_measure
+    prompt: "What was total recognized revenue last fiscal month?"
+    golden_sql: config/golden/q01.sql
+    scoring: execution_match
+    notes: "Uses fiscal calendar + recognized (not order/ship) date. Ambiguous without curation."
+
+  - id: Q2
+    class: dimension_breakout
+    prompt: "Recognized revenue by geo region for last fiscal quarter"
+    golden_sql: config/golden/q02.sql
+    scoring: execution_match
+
+  - id: Q3
+    class: join_ranking
+    prompt: "Top 10 members by lifetime recognized hardware revenue fiscal YTD"
+    golden_sql: config/golden/q03.sql
+    scoring: execution_match
+
+  - id: Q4
+    class: ambiguous_term
+    prompt: "How is the business doing?"
+    golden_sql: config/golden/q04.sql
+    scoring: llm_judge
+    notes: "Should clarify or default to curated KPI pack (MRR, churn, recognized revenue)."
+
+  - id: Q5
+    class: filtered_metric
+    prompt: "How many active members in EMEA this fiscal year?"
+    golden_sql: config/golden/q05.sql
+    scoring: execution_match
+    notes: "Active member = proprietary definition resolved only in curated tiers."
+
+  - id: Q6
+    class: period_comparison
+    prompt: "Fiscal Q1 vs Q2 recognized revenue by product family"
+    golden_sql: config/golden/q06.sql
+    scoring: execution_match
+
+  - id: Q7
+    class: exploratory_why
+    prompt: "Why did revenue spike in June?"
+    golden_sql: config/golden/q07.sql
+    scoring: llm_judge
+    notes: "Planted PulseForge X1 launch + PFX1-LAUNCH-2025 campaign."
+
+  - id: Q8
+    class: multi_hop
+    prompt: "Which campaigns drove subscription churn reduction?"
+    golden_sql: config/golden/q08.sql
+    scoring: execution_match
+    notes: "Planted RETAIN-PLUS-2025Q2 signal."
+
+  - id: Q9
+    class: edge_empty
+    prompt: "Recognized revenue for product code ZX-NOEXIST-999"
+    golden_sql: config/golden/q09.sql
+    scoring: execution_match
+    notes: "Expect empty / zero — not hallucinated rows."
+
+  - id: Q10
+    class: paraphrase
+    paraphrase_of: Q1
+    prompt: "Sum of recognized sales for the previous fiscal calendar month"
+    golden_sql: config/golden/q01.sql
+    scoring: execution_match
+    notes: "Paraphrase of Q1 — sample questions alone should not help."

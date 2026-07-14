@@ -1,0 +1,62 @@
+tier: T6
+name: table_column_descriptions
+axis: knowledge_store_metadata
+lever: descriptions_only
+intent: Agent-level table/column descriptions only — no synonyms, joins, or examples
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: PulseForge connected fitness commerce and subscription facts.
+table_descriptions:
+  fact_order_line: Fulfilled order lines; official revenue is net_recognized_amount dated by recognition_date_key
+  dim_date: PulseForge 4-4-5 fiscal calendar (fiscal_year / fiscal_month / fiscal_quarter)
+  dim_geo: Commercial geography (region_code NA/EMEA/APAC/LATAM)
+  dim_product: Product catalog (product_family, product_class DEVICE/ACCESSORY/SUBSCRIPTION)
+  fact_subscription_event: Subscription lifecycle events ACTIVATE/RENEW/CANCEL with mrr_delta
+sample_questions: []
+instructions:
+  text: ""
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs:
+  dim_geo:
+    - column_name: region_code
+      description: Short region code NA, EMEA, APAC, LATAM
+    - column_name: region_name
+      description: Commercial region display name
+    - column_name: country_code
+      description: ISO country code
+  dim_product:
+    - column_name: product_family
+      description: Product family such as PulseForge X1
+    - column_name: product_class
+      description: DEVICE, ACCESSORY, or SUBSCRIPTION
+    - column_name: sku_code
+      description: Stock keeping unit code
+  dim_date:
+    - column_name: fiscal_year
+      description: PulseForge 4-4-5 fiscal year
+    - column_name: fiscal_month
+      description: Fiscal month 1-12 NOT calendar month
+    - column_name: fiscal_quarter
+      description: Fiscal quarter 1-4
+  fact_order_line:
+    - column_name: net_recognized_amount
+      description: Official revenue amount net of returns recognition-dated
+    - column_name: line_status
+      description: FULFILLED lines only count as recognized revenue
+    - column_name: recognition_date_key
+      description: Date key for revenue recognition join to dim_date
+benchmarks: []
+manual_steps: []

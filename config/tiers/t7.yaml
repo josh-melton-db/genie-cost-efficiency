@@ -1,0 +1,52 @@
+tier: T7
+name: descriptions_plus_synonyms
+axis: knowledge_store_metadata
+lever: synonyms
+intent: Column descriptions + business-term synonyms only
+data_objects:
+  - ${catalog}.${schema}.dim_member
+  - ${catalog}.${schema}.dim_product
+  - ${catalog}.${schema}.dim_campaign
+  - ${catalog}.${schema}.dim_geo
+  - ${catalog}.${schema}.dim_date
+  - ${catalog}.${schema}.fact_order
+  - ${catalog}.${schema}.fact_order_line
+  - ${catalog}.${schema}.fact_subscription_event
+  - ${catalog}.${schema}.fact_usage_event
+  - ${catalog}.${schema}.fact_return
+description: PulseForge connected fitness commerce and subscription facts.
+table_descriptions:
+  fact_order_line: Fulfilled order lines; official revenue is net_recognized_amount
+  dim_date: 4-4-5 fiscal calendar
+sample_questions: []
+instructions:
+  text: ""
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs:
+  dim_geo:
+    - column_name: region_code
+      description: Short region code NA, EMEA, APAC, LATAM
+      synonyms: [region, geo, market, geography]
+    - column_name: region_name
+      synonyms: [region, territory]
+  dim_product:
+    - column_name: product_family
+      synonyms: [family, product line, device family]
+    - column_name: sku_code
+      synonyms: [sku, product_code, item_code]
+  dim_date:
+    - column_name: fiscal_month
+      synonyms: [fm, month, fiscal mo]
+    - column_name: fiscal_year
+      synonyms: [fy, fiscal_yr]
+  fact_order_line:
+    - column_name: net_recognized_amount
+      synonyms: [revenue, sales, recognized_sales, net_revenue]
+    - column_name: recognition_date_key
+      synonyms: [recognition_date, recognized_on]
+benchmarks: []
+manual_steps: []

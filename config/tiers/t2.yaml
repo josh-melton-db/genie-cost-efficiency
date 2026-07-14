@@ -1,0 +1,26 @@
+tier: T2
+name: metric_view_basic
+axis: data_surface
+lever: basic_metric_view
+intent: Semantic layer without deep curation
+data_objects:
+  - ${catalog}.${schema}.mv_pulseforge_sales_basic
+description: |
+  PulseForge sales KPIs via a basic certified metric view.
+  Prefer MEASURE() aggregations over raw fact scans.
+sample_questions:
+  - "What was total recognized revenue last fiscal month?"
+  - "Recognized revenue by geo region for last fiscal quarter"
+instructions:
+  text: |
+    Use the metric view for all revenue and member KPIs.
+    Recognized revenue uses recognition date, not order or ship date.
+  example_sqls: []
+  join_specs: []
+  sql_snippets:
+    measures: []
+    filters: []
+column_configs: {}
+benchmarks: []
+manual_steps:
+  - "Confirm metric view is tagged certified in UC."
